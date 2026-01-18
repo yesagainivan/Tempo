@@ -21,14 +21,14 @@ Tempo is a temporal-first agenda app that anchors everything to time. It combine
 ## Current Status
 
 ### ✅ Implemented
-- **Calendar View** — Monthly grid with task indicators
+- **Home Dashboard** — Bento-style layout with calendar, today's tasks, and upcoming preview
+- **Calendar View** — Compact month grid with task indicators
 - **Day Agenda** — Focused view for a single day's tasks
-- **Quick Tasks** — Fast capture with completion animations
+- **Quick Tasks** — Fast capture with editing modal and completion animations
 - **Command Bar** — `Cmd+K` with natural language date parsing
 
-### ⏳ In Progress
+### ⏳ Coming Next
 - **Deep Tasks** — Markdown notes that "bloom" from tasks
-- **Today View** — Bento-style dashboard
 
 [See the full roadmap →](roadmap.md)
 

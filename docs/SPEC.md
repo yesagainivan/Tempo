@@ -44,13 +44,14 @@ Focused view for planning and working on a single day.
 
 ### Quick Tasks ✅
 
-Fast, lightweight task capture.
+Fast, lightweight task capture with full editing.
 
 **Behavior:**
 - Inline creation: type and press Enter
 - Checkbox toggles completion
 - Completion triggers satisfying animation (checkmark draw, scale)
-- Click task text to edit (opens detail view)
+- Click task text to edit (opens modal with title and date picker)
+- Reschedule tasks via date picker
 - Delete with confirmation dialog
 
 **Data Model:**
@@ -58,11 +59,12 @@ Fast, lightweight task capture.
 interface Task {
   id: string;
   title: string;
+  type: 'quick' | 'deep';
+  content: string;  // Markdown for Deep Tasks
   completed: boolean;
   dueDate: Date;
   createdAt: Date;
   updatedAt: Date;
-  notes?: string;  // For future Deep Tasks
 }
 ```
 
@@ -111,21 +113,19 @@ Tasks that expand into full Markdown documents.
 
 ---
 
-### Today View (Bento Dashboard) ⏳
+### Home Dashboard ✅
 
-Single dashboard for daily focus.
+Bento-style dashboard as the primary landing view.
 
-**Planned Layout:**
-- Grid of tiles showing key information
-- Today's task list (primary tile)
-- Upcoming deadlines preview
-- Optional: quick capture input
-- Optional: "Clear the Deck" for yesterday's unfinished tasks
+**Layout:**
+- **Calendar Tile** — Compact month grid for navigation
+- **Today Tile** — Today's tasks with quick add and completion stats
+- **Upcoming Tile** — Next 7 days preview with task counts
 
 **Design:**
-- Bento-style grid layout
-- Clean, calm aesthetic
-- Customizable tile arrangement (future)
+- Glassmorphic card tiles with subtle depth
+- Responsive grid (stacks on mobile)
+- Elegant hover effects without overlap
 
 ---
 
