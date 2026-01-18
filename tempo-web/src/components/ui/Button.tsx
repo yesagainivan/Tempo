@@ -5,7 +5,7 @@ import { forwardRef, type ReactNode } from 'react';
 // BUTTON COMPONENT
 // =================================================================
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
@@ -19,6 +19,7 @@ const variantStyles: Record<ButtonVariant, string> = {
     primary: 'bg-accent-primary text-white hover:bg-accent-secondary',
     secondary: 'bg-bg-tertiary text-text-primary border border-border-default hover:bg-bg-secondary',
     ghost: 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-glass',
+    danger: 'bg-error text-white hover:bg-error/90',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

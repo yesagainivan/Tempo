@@ -137,3 +137,10 @@ export async function rescheduleTask(taskId: string, newDate: Date): Promise<voi
         updatedAt: Date.now(),
     });
 }
+
+/**
+ * Delete a task
+ */
+export async function deleteTask(taskId: string): Promise<void> {
+    await db.tasks.delete(taskId);
+}

@@ -1,8 +1,9 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Task } from '../../lib/db';
-import { toggleTaskComplete } from '../../lib/db';
-import { Checkbox } from '../ui';
+import { toggleTaskComplete, deleteTask } from '../../lib/db';
+import { Checkbox, ConfirmDialog } from '../ui';
+import { TrashIcon } from '../icons';
 import { useAppStore } from '../../stores/appStore';
 
 // =================================================================
@@ -17,9 +18,14 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
     const { setExpandedTaskId, expandedTaskId } = useAppStore();
     const isExpanded = expandedTaskId === task.id;
     const isDeep = task.type === 'deep';
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleToggle = async () => {
         await toggleTaskComplete(task.id);
+    };
+
+    const handleDelete = async () => {
+        await deleteTask(task.id);
     };
 
     const handleClick = () => {
@@ -101,10 +107,38 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 )}
             </div>
 
+            {/* Delete Button (Hover) */}
+            <div className={`
+                opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                ${task.completed ? 'opacity-0' : ''}
+            `}>
+                <button
+                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDeleting(true);
+                    }}
+                >
+                    <TrashIcon className="w-4 h-4" />
+                </button>
+            </div>
+
+            {/* Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={isDeleting}
+                onClose={() => setIsDeleting(false)}
+                onConfirm={handleDelete}
+                title="Delete Task"
+                description={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+                confirmText="Delete"
+                variant="danger"
+            />
+
             {/* Type Badge */}
             {isDeep && (
                 <motion.span
                     className="
+            absolute top-3 right-3
             px-2 py-1 text-[10px] uppercase tracking-wider font-medium
             bg-accent-primary/10 text-accent-primary
             rounded-md flex-shrink-0
@@ -129,3 +163,4 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
         </motion.div>
     );
 });
+
