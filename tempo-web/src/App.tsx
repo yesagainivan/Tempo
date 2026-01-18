@@ -1,21 +1,48 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from './stores/appStore';
 import { Button } from './components/ui';
-import { Timeline } from './components/timeline';
-import { motion } from 'framer-motion';
+import { MonthCalendar, DayAgenda } from './components/calendar';
+import { motion, AnimatePresence } from 'framer-motion';
+import { addMonths, subMonths, startOfMonth } from 'date-fns';
 
 // =================================================================
-// TEMPO APP SHELL
+// TEMPO APP SHELL - Calendar First
 // =================================================================
+
+type ViewMode = 'calendar' | 'day';
 
 function App() {
-  const {
-    view,
-    setView,
-    isCommandBarOpen,
-    toggleCommandBar,
-    focusDate
-  } = useAppStore();
+  const { isCommandBarOpen, toggleCommandBar } = useAppStore();
+
+  // Calendar state
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+
+  // Navigation handlers
+  const goToPrevMonth = useCallback(() => {
+    setCurrentMonth(prev => subMonths(prev, 1));
+  }, []);
+
+  const goToNextMonth = useCallback(() => {
+    setCurrentMonth(prev => addMonths(prev, 1));
+  }, []);
+
+  const handleSelectDate = useCallback((date: Date) => {
+    setSelectedDate(date);
+    setViewMode('day');
+  }, []);
+
+  const handleBackToCalendar = useCallback(() => {
+    setViewMode('calendar');
+    // Ensure calendar shows the month of selected date
+    setCurrentMonth(startOfMonth(selectedDate));
+  }, [selectedDate]);
+
+  const handleDateChange = useCallback((date: Date) => {
+    setSelectedDate(date);
+    setCurrentMonth(startOfMonth(date));
+  }, []);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -25,11 +52,15 @@ function App() {
         e.preventDefault();
         toggleCommandBar();
       }
+      // Escape to go back to calendar
+      if (e.key === 'Escape' && viewMode === 'day') {
+        handleBackToCalendar();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleCommandBar]);
+  }, [toggleCommandBar, viewMode, handleBackToCalendar]);
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary">
@@ -38,28 +69,29 @@ function App() {
         <div className="flex items-center justify-between px-6 py-4">
           {/* Logo */}
           <motion.h1
-            className="text-xl font-semibold tracking-tight"
+            className="text-xl font-semibold tracking-tight cursor-pointer"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            onClick={handleBackToCalendar}
           >
             <span className="text-accent-primary">Tempo</span>
           </motion.h1>
 
-          {/* Navigation */}
+          {/* View Toggle */}
           <nav className="flex items-center gap-2">
             <Button
-              variant={view === 'timeline' ? 'primary' : 'ghost'}
+              variant={viewMode === 'calendar' ? 'primary' : 'ghost'}
               size="sm"
-              onClick={() => setView('timeline')}
+              onClick={handleBackToCalendar}
             >
-              Timeline
+              📅 Calendar
             </Button>
             <Button
-              variant={view === 'today' ? 'primary' : 'ghost'}
+              variant={viewMode === 'day' ? 'primary' : 'ghost'}
               size="sm"
-              onClick={() => setView('today')}
+              onClick={() => setViewMode('day')}
             >
-              Today
+              📋 Day
             </Button>
           </nav>
 
@@ -78,73 +110,78 @@ function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className={view === 'timeline' ? 'pt-16' : 'pt-20 px-6'}>
-        {view === 'timeline' ? (
-          <Timeline />
-        ) : (
-          <TodayPlaceholder focusDate={focusDate} />
-        )}
+      <main className="pt-20 px-4 sm:px-6 pb-8">
+        <AnimatePresence mode="wait">
+          {viewMode === 'calendar' ? (
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="pt-4"
+            >
+              <MonthCalendar
+                currentMonth={currentMonth}
+                selectedDate={selectedDate}
+                onSelectDate={handleSelectDate}
+                onPrevMonth={goToPrevMonth}
+                onNextMonth={goToNextMonth}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="day"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.2 }}
+              className="pt-4"
+            >
+              <DayAgenda
+                date={selectedDate}
+                onDateChange={handleDateChange}
+                onBackToCalendar={handleBackToCalendar}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
-      {/* Command Bar Overlay (placeholder) */}
-      {isCommandBarOpen && (
-        <motion.div
-          className="fixed inset-0 z-[100] flex items-start justify-center pt-[20vh]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={toggleCommandBar}
-          />
+      {/* Command Bar Overlay */}
+      <AnimatePresence>
+        {isCommandBarOpen && (
           <motion.div
-            className="relative w-full max-w-xl glass rounded-xl p-4 shadow-2xl"
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-[100] flex items-start justify-center pt-[20vh]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <input
-              autoFocus
-              type="text"
-              placeholder="What would you like to do?"
-              className="w-full bg-transparent border-none outline-none text-lg text-text-primary placeholder:text-text-muted"
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={toggleCommandBar}
             />
-            <p className="mt-4 text-sm text-text-muted">
-              Try: /task Buy milk tomorrow
-            </p>
+            <motion.div
+              className="relative w-full max-w-xl mx-4 glass rounded-xl p-4 shadow-2xl"
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <input
+                autoFocus
+                type="text"
+                placeholder="What would you like to do?"
+                className="w-full bg-transparent border-none outline-none text-lg text-text-primary placeholder:text-text-muted"
+              />
+              <p className="mt-4 text-sm text-text-muted">
+                Try: /task Buy milk tomorrow
+              </p>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
-  );
-}
-
-// =================================================================
-// PLACEHOLDERS (to be replaced with real components)
-// =================================================================
-
-function TodayPlaceholder({ focusDate }: { focusDate: Date }) {
-  return (
-    <motion.div
-      className="flex flex-col items-center justify-center min-h-[60vh]"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Today</h2>
-        <p className="text-text-secondary mb-4">
-          {focusDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </p>
-        <div className="glass rounded-xl p-8 mt-4">
-          <p className="text-text-muted">Your Bento dashboard will appear here</p>
-        </div>
-      </div>
-    </motion.div>
   );
 }
 

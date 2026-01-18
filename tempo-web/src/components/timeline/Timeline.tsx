@@ -1,72 +1,64 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, startOfDay, addDays } from 'date-fns';
 import { DayCard } from './DayCard';
-import { indexToDate, dateToIndex } from '../../lib/dates';
-import { useAppStore } from '../../stores/appStore';
 
 // =================================================================
 // INFINITE TIMELINE COMPONENT
 // =================================================================
 
 const OVERSCAN = 5;
+const ESTIMATED_ROW_HEIGHT = 180;
 
 // Virtual list total size (large enough for practical use)
-const TOTAL_DAYS = 365 * 10; // 10 years total
+// We use 10 years: 5 years past, 5 years future
+const YEARS_RANGE = 5;
+const TOTAL_DAYS = 365 * YEARS_RANGE * 2; // ~10 years
 const CENTER_INDEX = Math.floor(TOTAL_DAYS / 2);
+
+// Calculate initial scroll offset to center on today
+const INITIAL_SCROLL_OFFSET = CENTER_INDEX * ESTIMATED_ROW_HEIGHT;
 
 export function Timeline() {
     const parentRef = useRef<HTMLDivElement>(null);
-    const { focusDate, setFocusDate } = useAppStore();
-    const [centerDate] = useState(() => new Date(focusDate));
-    const [hasScrolledToToday, setHasScrolledToToday] = useState(false);
-    const [currentVisibleDate, setCurrentVisibleDate] = useState<Date>(new Date());
+    const [currentVisibleDate, setCurrentVisibleDate] = useState<Date>(() => new Date());
 
-    // Virtual list with dynamic sizing
+    // CRITICAL: Today is ALWAYS the center point, calculated once on mount
+    const today = useMemo(() => startOfDay(new Date()), []);
+
+    // Virtual list with dynamic sizing and initial offset
     const virtualizer = useVirtualizer({
         count: TOTAL_DAYS,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => 180, // Increased for new card design
+        estimateSize: () => ESTIMATED_ROW_HEIGHT,
         overscan: OVERSCAN,
+        initialOffset: INITIAL_SCROLL_OFFSET, // Start at today!
     });
 
-    // Scroll to today on mount
-    useEffect(() => {
-        if (!hasScrolledToToday && parentRef.current) {
-            const todayIndex = CENTER_INDEX + dateToIndex(new Date(), centerDate);
-            virtualizer.scrollToIndex(todayIndex, { align: 'start' });
-            setHasScrolledToToday(true);
-        }
-    }, [virtualizer, hasScrolledToToday, centerDate]);
+    // Convert virtual index to actual date
+    // CENTER_INDEX = today, lower indices = past, higher = future
+    const getDateForIndex = useCallback((virtualIndex: number): Date => {
+        const dayOffset = virtualIndex - CENTER_INDEX;
+        return addDays(today, dayOffset);
+    }, [today]);
 
     // Track visible date for header
     useEffect(() => {
         const items = virtualizer.getVirtualItems();
         if (items.length > 0) {
             const firstVisible = items[0];
-            const date = indexToDate(firstVisible.index - CENTER_INDEX, centerDate);
+            const date = getDateForIndex(firstVisible.index);
             setCurrentVisibleDate(date);
         }
-    }, [virtualizer.getVirtualItems(), centerDate]);
-
-    // Convert virtual index to actual date
-    const getDateForIndex = useCallback((virtualIndex: number): Date => {
-        const dayOffset = virtualIndex - CENTER_INDEX;
-        return indexToDate(dayOffset, centerDate);
-    }, [centerDate]);
-
-    // Handle adding a task
-    const handleAddTask = useCallback((date: Date) => {
-        setFocusDate(date);
-        useAppStore.getState().openCommandBar();
-    }, [setFocusDate]);
+    }, [virtualizer.getVirtualItems(), getDateForIndex]);
 
     // Jump to today
     const scrollToToday = useCallback(() => {
-        const todayIndex = CENTER_INDEX + dateToIndex(new Date(), centerDate);
-        virtualizer.scrollToIndex(todayIndex, { align: 'start', behavior: 'smooth' });
-    }, [virtualizer, centerDate]);
+        // Calculate scroll position for today (CENTER_INDEX)
+        const scrollOffset = CENTER_INDEX * ESTIMATED_ROW_HEIGHT;
+        parentRef.current?.scrollTo({ top: scrollOffset, behavior: 'smooth' });
+    }, []);
 
     const virtualItems = virtualizer.getVirtualItems();
 
@@ -117,17 +109,14 @@ export function Timeline() {
                                     transform: `translateY(${virtualRow.start}px)`,
                                 }}
                             >
-                                <DayCard
-                                    date={date}
-                                    onAddTask={handleAddTask}
-                                />
+                                <DayCard date={date} />
                             </div>
                         );
                     })}
                 </div>
             </div>
 
-            {/* Floating "Today" Button - More elegant */}
+            {/* Floating "Today" Button */}
             <motion.button
                 onClick={scrollToToday}
                 className="
@@ -155,7 +144,6 @@ export function Timeline() {
             {/* Timeline Progress Rail */}
             <div className="fixed right-3 top-1/2 -translate-y-1/2 z-40">
                 <div className="flex flex-col items-center gap-2">
-                    {/* Month indicator dots */}
                     <div className="w-1.5 h-40 bg-bg-tertiary/50 rounded-full overflow-hidden backdrop-blur-sm">
                         <motion.div
                             className="w-full bg-gradient-to-b from-accent-primary to-accent-secondary rounded-full"

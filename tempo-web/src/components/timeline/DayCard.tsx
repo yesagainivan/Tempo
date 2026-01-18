@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isToday, isPast, isTomorrow, format } from 'date-fns';
 import { useTasksForDate } from '../../hooks/useTasks';
-import { TaskItem } from '../tasks/TaskItem';
+import { TaskItem, InlineTaskCreator } from '../tasks';
 
 // =================================================================
 // DAY CARD COMPONENT - Elegant Agenda Style
@@ -10,10 +10,9 @@ import { TaskItem } from '../tasks/TaskItem';
 
 interface DayCardProps {
     date: Date;
-    onAddTask?: (date: Date) => void;
 }
 
-export const DayCard = memo(function DayCard({ date, onAddTask }: DayCardProps) {
+export const DayCard = memo(function DayCard({ date }: DayCardProps) {
     const tasks = useTasksForDate(date);
     const today = isToday(date);
     const tomorrow = isTomorrow(date);
@@ -60,7 +59,7 @@ export const DayCard = memo(function DayCard({ date, onAddTask }: DayCardProps) 
             >
                 {/* Today's special gradient border */}
                 {today && (
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent-primary/10 via-transparent to-accent-secondary/10 pointer-events-none" />
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent-primary/5 via-transparent to-accent-secondary/5 pointer-events-none" />
                 )}
 
                 {/* Content Container */}
@@ -150,32 +149,13 @@ export const DayCard = memo(function DayCard({ date, onAddTask }: DayCardProps) 
                                     <TaskItem task={task} />
                                 </motion.div>
                             ))}
-
-                            {/* Empty State */}
-                            {tasks.length === 0 && (
-                                <motion.button
-                                    onClick={() => onAddTask?.(date)}
-                                    className={`
-                    w-full py-4 px-5
-                    text-sm
-                    border-2 border-dashed rounded-xl
-                    transition-all duration-200
-                    ${today
-                                            ? 'border-accent-primary/30 text-accent-primary/70 hover:border-accent-primary hover:text-accent-primary hover:bg-accent-primary/5'
-                                            : 'border-border-subtle text-text-muted hover:border-text-muted hover:text-text-secondary'
-                                        }
-                  `}
-                                    whileHover={{ scale: 1.01 }}
-                                    whileTap={{ scale: 0.99 }}
-                                >
-                                    <span className="flex items-center justify-center gap-2">
-                                        <span className="text-lg">+</span>
-                                        <span>Add your first task</span>
-                                    </span>
-                                </motion.button>
-                            )}
                         </div>
                     </AnimatePresence>
+
+                    {/* Add Task Section */}
+                    <div className={tasks.length > 0 ? 'mt-3 pt-3 border-t border-border-subtle' : ''}>
+                        <InlineTaskCreator date={date} isToday={today} />
+                    </div>
                 </div>
 
                 {/* Today's accent line */}
