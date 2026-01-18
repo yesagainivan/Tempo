@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppStore } from './stores/appStore';
 import { Button } from './components/ui';
+import { Timeline } from './components/timeline';
 import { motion } from 'framer-motion';
 
 // =================================================================
@@ -77,9 +78,9 @@ function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="pt-20 px-6">
+      <main className={view === 'timeline' ? 'pt-16' : 'pt-20 px-6'}>
         {view === 'timeline' ? (
-          <TimelinePlaceholder focusDate={focusDate} />
+          <Timeline />
         ) : (
           <TodayPlaceholder focusDate={focusDate} />
         )}
@@ -122,32 +123,6 @@ function App() {
 // =================================================================
 // PLACEHOLDERS (to be replaced with real components)
 // =================================================================
-
-function TimelinePlaceholder({ focusDate }: { focusDate: Date }) {
-  return (
-    <motion.div
-      className="flex flex-col items-center justify-center min-h-[60vh]"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Infinite Timeline</h2>
-        <p className="text-text-secondary mb-4">
-          {focusDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </p>
-        <div className="w-px h-32 bg-gradient-to-b from-accent-primary to-transparent mx-auto" />
-        <p className="text-text-muted mt-4 text-sm">
-          Scroll through time — past, present, future
-        </p>
-      </div>
-    </motion.div>
-  );
-}
 
 function TodayPlaceholder({ focusDate }: { focusDate: Date }) {
   return (
