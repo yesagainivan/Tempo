@@ -160,6 +160,145 @@ tempo-web/
 
 ---
 
+## Phase 2 Features (Post-MVP)
+
+### 6. Stats & Insights ⏳
+Track productivity patterns and celebrate progress.
+
+**Requirements:**
+- [ ] Completion rate chart (daily/weekly/monthly)
+- [ ] Streak tracking (consecutive 100% days)
+- [ ] Productivity heatmap (best days/times)
+- [ ] Weekly summary view
+
+---
+
+### 7. Recurring Tasks ⏳
+Tasks that repeat on a schedule.
+
+**Requirements:**
+- [ ] Recurrence patterns: daily, weekly, monthly, yearly
+- [ ] Custom intervals (every N days/weeks)
+- [ ] Day-of-week selection for weekly tasks
+- [ ] Optional end date or "X occurrences"
+- [ ] Skip/complete instance without affecting series
+- [ ] Natural language: `/task Water plants every 3 days`
+
+**Schema:**
+```typescript
+recurrence?: {
+  pattern: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number;
+  daysOfWeek?: number[];
+  endDate?: number;
+}
+```
+
+---
+
+### 8. Multi-Day Tasks ⏳
+Tasks that span multiple days (projects, events).
+
+**Requirements:**
+- [ ] Optional start date (current dueDate becomes end date)
+- [ ] Show on all days in range with "ongoing" indicator
+- [ ] Progress tracking across the span
+- [ ] Calendar visualization (task bars across days)
+
+---
+
+### 9. Time-of-Day Sections ⏳
+Organize tasks by morning, afternoon, evening.
+
+**Requirements:**
+- [ ] Automatic grouping based on time hints
+- [ ] Manual drag between sections
+- [ ] Collapsible sections
+- [ ] Optional time estimates per task
+
+---
+
+### 10. Tags & Labels ⏳
+Categorize tasks with color-coded tags.
+
+**Requirements:**
+- [ ] Create/edit/delete custom tags
+- [ ] Filter by tag in all views
+- [ ] Multi-tag support per task
+- [ ] Tag color picker
+
+---
+
+### 11. Keyboard Power User Mode ⏳
+Vim-style navigation for speed.
+
+**Requirements:**
+- [ ] `j/k` — Move between tasks
+- [ ] `x` — Toggle complete
+- [ ] `d` — Delete (with confirmation skip option)
+- [ ] `e` — Edit task
+- [ ] `n` — New task
+- [ ] `?` — Show keyboard shortcuts overlay
+
+---
+
+### 12. Quick Reschedule ⏳
+Fast task postponement.
+
+**Requirements:**
+- [ ] "Tomorrow" quick action (one click/key)
+- [ ] "Next week" quick action
+- [ ] Right-click context menu with date options
+- [ ] Swipe gesture on mobile
+
+---
+
+### 13. End-of-Day Review ⏳
+Prompt to handle incomplete tasks.
+
+**Requirements:**
+- [ ] Evening notification/modal trigger
+- [ ] List incomplete tasks for today
+- [ ] Quick actions: reschedule to tomorrow, delete, mark done
+- [ ] Optional daily notes/reflection field
+
+---
+
+### 14. Focus Mode ⏳
+Distraction-free today view.
+
+**Requirements:**
+- [ ] Hide calendar and sidebar
+- [ ] Show only today's tasks
+- [ ] Minimal chrome, maximum focus
+- [ ] Keyboard shortcut to toggle (`f`)
+
+---
+
+### 15. PWA & Notifications ⏳
+Installable app with reminders.
+
+**Requirements:**
+- [ ] Service worker for offline caching
+- [ ] Install prompt on supported browsers
+- [ ] Optional push notifications for due tasks
+- [ ] Configurable reminder times
+
+---
+
+## Stretch Goals
+
+| Feature | Description |
+|---------|-------------|
+| Week view toggle | Alternative calendar display |
+| Drag to reschedule | Reorder/move tasks between days |
+| YAML frontmatter | Parse metadata from deep task content |
+| Cloud sync | Optional backup to user's cloud storage |
+| Themes | Light mode, custom accent colors |
+| Export/Import | JSON, Markdown, or calendar formats |
+
+---
+
 ## Status Legend
 
 | Symbol | Meaning |
