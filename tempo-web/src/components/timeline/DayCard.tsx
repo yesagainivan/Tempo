@@ -1,7 +1,9 @@
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isToday, isPast, isTomorrow, format } from 'date-fns';
+
 import { useTasksForDate } from '../../hooks/useTasks';
+import { CheckIcon } from '../icons';
 import { TaskItem, InlineTaskCreator } from '../tasks';
 
 // =================================================================
@@ -114,7 +116,9 @@ export const DayCard = memo(function DayCard({ date }: DayCardProps) {
                                 transition={{ type: 'spring', delay: 0.1 }}
                             >
                                 {completedCount > 0 && (
-                                    <span className="text-success">✓ {completedCount}</span>
+                                    <span className="text-success flex items-center gap-1">
+                                        <CheckIcon size={14} /> {completedCount}
+                                    </span>
                                 )}
                                 {completedCount > 0 && completedCount < taskCount && (
                                     <span className="text-text-muted">·</span>

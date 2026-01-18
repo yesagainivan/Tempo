@@ -3,6 +3,15 @@ import { Command } from 'cmdk';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { useCommandBar } from './useCommandBar';
+import {
+    SearchIcon,
+    SparklesIcon,
+    CalendarIcon,
+    HelpIcon,
+    CheckIcon,
+    CircleIcon,
+    CornerDownLeftIcon
+} from '../icons';
 import type { Task } from '../../lib/db';
 
 // =================================================================
@@ -147,7 +156,11 @@ export function CommandBar({
                                                         onMouseEnter={() => setSelectedIndex(index)}
                                                     >
                                                         <span className="command-item-icon">
-                                                            {result.task.completed ? '✓' : '○'}
+                                                            {result.task.completed ? (
+                                                                <CheckIcon className="w-4 h-4 text-success" />
+                                                            ) : (
+                                                                <CircleIcon className="w-4 h-4 text-text-tertiary" />
+                                                            )}
                                                         </span>
                                                         <div className="command-item-content">
                                                             <span className="command-item-title">
@@ -189,13 +202,20 @@ export function CommandBar({
 // =================================================================
 
 function ModeIcon({ mode }: { mode: string }) {
-    const icons: Record<string, string> = {
-        search: '🔍',
-        create: '✨',
-        goto: '📅',
-        help: '❓',
-    };
-    return <span className="command-mode-icon">{icons[mode] || '🔍'}</span>;
+    const iconProps = { className: "w-5 h-5" };
+
+    switch (mode) {
+        case 'search':
+            return <span className="command-mode-icon"><SearchIcon {...iconProps} /></span>;
+        case 'create':
+            return <span className="command-mode-icon"><SparklesIcon {...iconProps} /></span>;
+        case 'goto':
+            return <span className="command-mode-icon"><CalendarIcon {...iconProps} /></span>;
+        case 'help':
+            return <span className="command-mode-icon"><HelpIcon {...iconProps} /></span>;
+        default:
+            return <span className="command-mode-icon"><SearchIcon {...iconProps} /></span>;
+    }
 }
 
 function CreateTaskPreview({
@@ -210,7 +230,9 @@ function CreateTaskPreview({
     return (
         <div className="command-preview">
             <div className="command-preview-header">
-                <span className="command-preview-icon">✨</span>
+                <span className="command-preview-icon">
+                    <SparklesIcon className="w-5 h-5 text-accent-primary" />
+                </span>
                 <span>Create Task</span>
             </div>
             <div className="command-preview-body">
@@ -231,7 +253,7 @@ function CreateTaskPreview({
                     className="command-preview-action"
                     disabled={!title}
                 >
-                    <kbd>↵</kbd> Create task
+                    <CornerDownLeftIcon className="w-4 h-4" /> Create task
                 </button>
             </div>
         </div>
@@ -248,7 +270,9 @@ function GoToDatePreview({
     return (
         <div className="command-preview">
             <div className="command-preview-header">
-                <span className="command-preview-icon">📅</span>
+                <span className="command-preview-icon">
+                    <CalendarIcon className="w-5 h-5 text-accent-primary" />
+                </span>
                 <span>Jump to Date</span>
             </div>
             <div className="command-preview-body">
@@ -259,7 +283,7 @@ function GoToDatePreview({
             </div>
             <div className="command-preview-footer">
                 <button onClick={onConfirm} className="command-preview-action">
-                    <kbd>↵</kbd> Go to date
+                    <CornerDownLeftIcon className="w-4 h-4" /> Go to date
                 </button>
             </div>
         </div>
@@ -361,7 +385,7 @@ function HelpContent() {
                 <h4>Keyboard</h4>
                 <ul>
                     <li><kbd>↑</kbd> <kbd>↓</kbd> — Navigate results</li>
-                    <li><kbd>↵</kbd> — Select / Confirm</li>
+                    <li><CornerDownLeftIcon className="w-3 h-3 inline align-middle" /> — Select / Confirm</li>
                     <li><kbd>esc</kbd> — Close</li>
                 </ul>
             </div>

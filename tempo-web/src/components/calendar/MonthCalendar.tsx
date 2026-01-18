@@ -12,6 +12,7 @@ import {
     isSameDay,
 } from 'date-fns';
 import { useTaskCountForDate } from '../../hooks/useTasks';
+import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
 
 // =================================================================
 // MONTH CALENDAR COMPONENT
@@ -54,7 +55,7 @@ export const MonthCalendar = memo(function MonthCalendar({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                 >
-                    ←
+                    <ChevronLeftIcon className="w-5 h-5" />
                 </motion.button>
 
                 <motion.h2
@@ -72,7 +73,7 @@ export const MonthCalendar = memo(function MonthCalendar({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                 >
-                    →
+                    <ChevronRightIcon className="w-5 h-5" />
                 </motion.button>
             </div>
 

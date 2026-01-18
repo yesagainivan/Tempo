@@ -3,6 +3,7 @@ import { useAppStore } from './stores/appStore';
 import { Button } from './components/ui';
 import { MonthCalendar, DayAgenda } from './components/calendar';
 import { CommandBar } from './components/command-bar';
+import { CalendarIcon, ListIcon } from './components/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { addMonths, subMonths, startOfMonth } from 'date-fns';
 import type { Task } from './lib/db';
@@ -108,14 +109,14 @@ function App() {
               size="sm"
               onClick={handleBackToCalendar}
             >
-              📅 Calendar
+              <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
             </Button>
             <Button
               variant={viewMode === 'day' ? 'primary' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('day')}
             >
-              📋 Day
+              <ListIcon className="w-4 h-4 mr-2" /> Day
             </Button>
           </nav>
 
