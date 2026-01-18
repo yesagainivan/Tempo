@@ -79,14 +79,15 @@ Lightning-fast creation via `Cmd/Ctrl + K`.
 
 ---
 
-### 5. Today View (Bento-lite) ⏳
-Single dashboard for daily focus.
+### 5. Home Dashboard (Bento Layout) ✅
+Dashboard with calendar, today's tasks, and upcoming preview.
 
 **Requirements:**
-- [ ] Grid layout with key information
-- [ ] Today's tasks list
-- [ ] Optional: upcoming deadlines preview
-- [ ] Clean, calm aesthetic
+- [x] Bento grid layout with elegant tiles
+- [x] Compact calendar tile
+- [x] Today's tasks tile with quick add
+- [x] Upcoming tasks preview (next 7 days)
+- [x] Clean, glassmorphic aesthetic
 
 ---
 

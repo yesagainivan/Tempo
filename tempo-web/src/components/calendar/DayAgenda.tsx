@@ -39,7 +39,7 @@ export const DayAgenda = memo(function DayAgenda({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
-                        ← Calendar
+                        ← Home
                     </motion.button>
                 )}
 

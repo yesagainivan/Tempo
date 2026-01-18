@@ -1,63 +1,49 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from './stores/appStore';
 import { Button } from './components/ui';
-import { MonthCalendar, DayAgenda } from './components/calendar';
+import { Home } from './components/home';
+import { DayAgenda } from './components/calendar';
 import { CommandBar } from './components/command-bar';
-import { CalendarIcon, ListIcon } from './components/icons';
+import { HomeIcon, ListIcon } from './components/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { addMonths, subMonths, startOfMonth } from 'date-fns';
 import type { Task } from './lib/db';
 
 // =================================================================
-// TEMPO APP SHELL - Calendar First
+// TEMPO APP SHELL - Home Dashboard First
 // =================================================================
 
-type ViewMode = 'calendar' | 'day';
+type ViewMode = 'home' | 'day';
 
 function App() {
   const { isCommandBarOpen, toggleCommandBar, closeCommandBar } = useAppStore();
 
-  // Calendar state
-  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
-  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
+  // Navigation state
+  const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   // Navigation handlers
-  const goToPrevMonth = useCallback(() => {
-    setCurrentMonth(prev => subMonths(prev, 1));
-  }, []);
-
-  const goToNextMonth = useCallback(() => {
-    setCurrentMonth(prev => addMonths(prev, 1));
-  }, []);
-
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(date);
     setViewMode('day');
   }, []);
 
-  const handleBackToCalendar = useCallback(() => {
-    setViewMode('calendar');
-    // Ensure calendar shows the month of selected date
-    setCurrentMonth(startOfMonth(selectedDate));
-  }, [selectedDate]);
+  const handleBackToHome = useCallback(() => {
+    setViewMode('home');
+  }, []);
 
   const handleDateChange = useCallback((date: Date) => {
     setSelectedDate(date);
-    setCurrentMonth(startOfMonth(date));
   }, []);
 
   // Command bar handlers
   const handleCreateTask = useCallback((_taskId: string, date: Date) => {
     // Navigate to the day where task was created
     setSelectedDate(date);
-    setCurrentMonth(startOfMonth(date));
     setViewMode('day');
   }, []);
 
   const handleJumpToDate = useCallback((date: Date) => {
     setSelectedDate(date);
-    setCurrentMonth(startOfMonth(date));
     setViewMode('day');
   }, []);
 
@@ -65,7 +51,6 @@ function App() {
     // Navigate to the task's due date
     const date = new Date(task.dueDate);
     setSelectedDate(date);
-    setCurrentMonth(startOfMonth(date));
     setViewMode('day');
   }, []);
 
@@ -77,15 +62,15 @@ function App() {
         e.preventDefault();
         toggleCommandBar();
       }
-      // Escape to go back to calendar (only if command bar is closed)
+      // Escape to go back to home (only if command bar is closed)
       if (e.key === 'Escape' && viewMode === 'day' && !isCommandBarOpen) {
-        handleBackToCalendar();
+        handleBackToHome();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleCommandBar, viewMode, handleBackToCalendar, isCommandBarOpen]);
+  }, [toggleCommandBar, viewMode, handleBackToHome, isCommandBarOpen]);
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary">
@@ -97,7 +82,7 @@ function App() {
             className="text-xl font-semibold tracking-tight cursor-pointer"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            onClick={handleBackToCalendar}
+            onClick={handleBackToHome}
           >
             <span className="text-accent-primary">Tempo</span>
           </motion.h1>
@@ -105,11 +90,11 @@ function App() {
           {/* View Toggle */}
           <nav className="flex items-center gap-2">
             <Button
-              variant={viewMode === 'calendar' ? 'primary' : 'ghost'}
+              variant={viewMode === 'home' ? 'primary' : 'ghost'}
               size="sm"
-              onClick={handleBackToCalendar}
+              onClick={handleBackToHome}
             >
-              <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
+              <HomeIcon className="w-4 h-4 mr-2" /> Home
             </Button>
             <Button
               variant={viewMode === 'day' ? 'primary' : 'ghost'}
@@ -137,22 +122,16 @@ function App() {
       {/* Main Content Area */}
       <main className="pt-20 px-4 sm:px-6 pb-8">
         <AnimatePresence mode="wait">
-          {viewMode === 'calendar' ? (
+          {viewMode === 'home' ? (
             <motion.div
-              key="calendar"
-              initial={{ opacity: 0, scale: 0.95 }}
+              key="home"
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.2 }}
               className="pt-4"
             >
-              <MonthCalendar
-                currentMonth={currentMonth}
-                selectedDate={selectedDate}
-                onSelectDate={handleSelectDate}
-                onPrevMonth={goToPrevMonth}
-                onNextMonth={goToNextMonth}
-              />
+              <Home onSelectDate={handleSelectDate} />
             </motion.div>
           ) : (
             <motion.div
@@ -166,7 +145,7 @@ function App() {
               <DayAgenda
                 date={selectedDate}
                 onDateChange={handleDateChange}
-                onBackToCalendar={handleBackToCalendar}
+                onBackToCalendar={handleBackToHome}
               />
             </motion.div>
           )}
@@ -186,4 +165,3 @@ function App() {
 }
 
 export default App;
-
