@@ -20,17 +20,30 @@
 
 ## MVP Features (Phase 1)
 
-### 1. Infinite Timeline (Chronicle) ⏳
+### 1. Infinite Timeline (Chronicle) ✅
 The signature feature. Vertical scrolling through past, present, future.
 
 **Requirements:**
-- [ ] Virtualized rendering (react-window or custom)
-- [ ] Bi-directional infinite scroll
-- [ ] Day headers with date formatting
-- [ ] Smooth scroll to "today" on load
-- [ ] Visual distinction for past/present/future
+- [x] Virtualized rendering (@tanstack/react-virtual)
+- [x] Bi-directional infinite scroll (10 years)
+- [x] Day headers with date formatting
+- [x] Smooth scroll to "today" on load
+- [x] Visual distinction for past/present/future
+- [x] Glassmorphic card design
+- [x] Sticky month/year header
 
 **Performance Target:** 60fps scrolling, <16ms render per frame
+
+---
+
+### 1b. Calendar View (Future) ⏳
+Monthly calendar grid for agenda navigation.
+
+**Requirements:**
+- [ ] Month grid with day cells
+- [ ] Task count indicators per day
+- [ ] Click to navigate to day in Timeline
+- [ ] Week/Month view toggle
 
 ---
 

@@ -1,11 +1,11 @@
 import { memo } from 'react';
-import { motion } from 'framer-motion';
-import { isToday, isPast, format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { isToday, isPast, isTomorrow, format } from 'date-fns';
 import { useTasksForDate } from '../../hooks/useTasks';
 import { TaskItem } from '../tasks/TaskItem';
 
 // =================================================================
-// DAY CARD COMPONENT
+// DAY CARD COMPONENT - Elegant Agenda Style
 // =================================================================
 
 interface DayCardProps {
@@ -16,109 +16,178 @@ interface DayCardProps {
 export const DayCard = memo(function DayCard({ date, onAddTask }: DayCardProps) {
     const tasks = useTasksForDate(date);
     const today = isToday(date);
+    const tomorrow = isTomorrow(date);
     const past = isPast(date) && !today;
 
-    // Calculate visual "weight" based on task count
+    // Visual weight based on task count
     const taskCount = tasks.length;
-    const loadIntensity = Math.min(taskCount / 8, 1); // Max at 8 tasks
+    const completedCount = tasks.filter(t => t.completed).length;
+    const loadIntensity = Math.min(taskCount / 8, 1);
+
+    // Get day label
+    const getDayLabel = () => {
+        if (today) return 'Today';
+        if (tomorrow) return 'Tomorrow';
+        return format(date, 'EEEE');
+    };
 
     return (
-        <motion.div
-            className={`
-        relative px-6 py-4 min-h-[120px]
-        border-b border-border-subtle
-        transition-colors duration-300
-        ${today ? 'bg-accent-primary/5' : ''}
-        ${past ? 'opacity-60' : ''}
-      `}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: past ? 0.6 : 1 }}
-            style={{
-                // Subtle glow based on load
-                boxShadow: taskCount > 3
-                    ? `inset 0 0 ${20 + loadIntensity * 20}px rgba(124, 92, 255, ${loadIntensity * 0.15})`
-                    : 'none',
-            }}
-        >
-            {/* Day Header */}
-            <div className="flex items-baseline justify-between mb-3">
-                <div className="flex items-center gap-3">
-                    {/* Date Number */}
-                    <span
-                        className={`
-              text-2xl font-bold tabular-nums
-              ${today ? 'text-accent-primary' : 'text-text-primary'}
-            `}
-                    >
-                        {format(date, 'd')}
-                    </span>
+        <div className="px-4 sm:px-8 lg:px-16 py-2">
+            <motion.div
+                className={`
+          relative max-w-3xl mx-auto
+          rounded-2xl overflow-hidden
+          transition-all duration-300
+          ${today
+                        ? 'glass shadow-lg ring-1 ring-accent-primary/20'
+                        : past
+                            ? 'bg-bg-secondary/30'
+                            : 'bg-bg-secondary/50 hover:bg-bg-secondary/70'
+                    }
+        `}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                    opacity: past ? 0.5 : 1,
+                    y: 0,
+                }}
+                transition={{ duration: 0.3 }}
+                style={{
+                    // Subtle glow for busy days
+                    boxShadow: today && taskCount > 0
+                        ? `0 0 ${30 + loadIntensity * 30}px rgba(124, 92, 255, ${0.1 + loadIntensity * 0.1})`
+                        : undefined,
+                }}
+            >
+                {/* Today's special gradient border */}
+                {today && (
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent-primary/10 via-transparent to-accent-secondary/10 pointer-events-none" />
+                )}
 
-                    {/* Day Name & Month */}
-                    <div className="flex flex-col">
-                        <span
-                            className={`
-                text-sm font-medium
-                ${today ? 'text-accent-primary' : 'text-text-primary'}
-              `}
-                        >
-                            {today ? 'Today' : format(date, 'EEEE')}
-                        </span>
-                        <span className="text-xs text-text-muted">
-                            {format(date, 'MMMM yyyy')}
-                        </span>
+                {/* Content Container */}
+                <div className="relative p-5 sm:p-6">
+                    {/* Day Header */}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                            {/* Large Date Number */}
+                            <motion.div
+                                className={`
+                  flex items-center justify-center
+                  w-14 h-14 rounded-xl
+                  ${today
+                                        ? 'bg-accent-primary text-white shadow-lg'
+                                        : 'bg-bg-tertiary text-text-primary'
+                                    }
+                `}
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ type: 'spring', stiffness: 400 }}
+                            >
+                                <span className="text-2xl font-bold tabular-nums">
+                                    {format(date, 'd')}
+                                </span>
+                            </motion.div>
+
+                            {/* Day Info */}
+                            <div>
+                                <h3 className={`
+                  text-lg font-semibold
+                  ${today ? 'text-accent-primary' : 'text-text-primary'}
+                `}>
+                                    {getDayLabel()}
+                                </h3>
+                                <p className="text-sm text-text-muted">
+                                    {format(date, 'MMMM yyyy')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Stats Badge */}
+                        {taskCount > 0 && (
+                            <motion.div
+                                className={`
+                  flex items-center gap-2 px-3 py-1.5 rounded-full text-sm
+                  ${today
+                                        ? 'bg-accent-primary/15 text-accent-primary'
+                                        : 'bg-bg-tertiary text-text-secondary'
+                                    }
+                `}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', delay: 0.1 }}
+                            >
+                                {completedCount > 0 && (
+                                    <span className="text-success">✓ {completedCount}</span>
+                                )}
+                                {completedCount > 0 && completedCount < taskCount && (
+                                    <span className="text-text-muted">·</span>
+                                )}
+                                {completedCount < taskCount && (
+                                    <span>{taskCount - completedCount} remaining</span>
+                                )}
+                            </motion.div>
+                        )}
                     </div>
+
+                    {/* Divider */}
+                    <div className={`
+            h-px mb-4
+            ${today
+                            ? 'bg-gradient-to-r from-transparent via-accent-primary/30 to-transparent'
+                            : 'bg-border-subtle'
+                        }
+          `} />
+
+                    {/* Tasks List */}
+                    <AnimatePresence mode="popLayout">
+                        <div className="space-y-2">
+                            {tasks.map((task, index) => (
+                                <motion.div
+                                    key={task.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    transition={{ delay: index * 0.05 }}
+                                >
+                                    <TaskItem task={task} />
+                                </motion.div>
+                            ))}
+
+                            {/* Empty State */}
+                            {tasks.length === 0 && (
+                                <motion.button
+                                    onClick={() => onAddTask?.(date)}
+                                    className={`
+                    w-full py-4 px-5
+                    text-sm
+                    border-2 border-dashed rounded-xl
+                    transition-all duration-200
+                    ${today
+                                            ? 'border-accent-primary/30 text-accent-primary/70 hover:border-accent-primary hover:text-accent-primary hover:bg-accent-primary/5'
+                                            : 'border-border-subtle text-text-muted hover:border-text-muted hover:text-text-secondary'
+                                        }
+                  `}
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.99 }}
+                                >
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="text-lg">+</span>
+                                        <span>Add your first task</span>
+                                    </span>
+                                </motion.button>
+                            )}
+                        </div>
+                    </AnimatePresence>
                 </div>
 
-                {/* Task Count Badge */}
-                {taskCount > 0 && (
-                    <span
-                        className={`
-              px-2 py-0.5 text-xs rounded-full
-              ${today
-                                ? 'bg-accent-primary/20 text-accent-primary'
-                                : 'bg-bg-tertiary text-text-secondary'
-                            }
-            `}
-                    >
-                        {taskCount} task{taskCount !== 1 ? 's' : ''}
-                    </span>
+                {/* Today's accent line */}
+                {today && (
+                    <motion.div
+                        className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent-primary to-accent-secondary"
+                        initial={{ scaleY: 0 }}
+                        animate={{ scaleY: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    />
                 )}
-            </div>
-
-            {/* Today Indicator Line */}
-            {today && (
-                <motion.div
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-accent-primary"
-                    layoutId="today-indicator"
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                />
-            )}
-
-            {/* Tasks List */}
-            <div className="space-y-2">
-                {tasks.map((task) => (
-                    <TaskItem key={task.id} task={task} />
-                ))}
-
-                {/* Empty State / Add Task */}
-                {tasks.length === 0 && (
-                    <button
-                        onClick={() => onAddTask?.(date)}
-                        className="
-              w-full py-3 px-4
-              text-sm text-text-muted
-              border border-dashed border-border-subtle
-              rounded-lg
-              hover:border-accent-primary/50 hover:text-text-secondary
-              transition-colors duration-200
-            "
-                    >
-                        + Add task
-                    </button>
-                )}
-            </div>
-        </motion.div>
+            </motion.div>
+        </div>
     );
 });

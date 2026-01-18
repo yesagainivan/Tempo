@@ -6,7 +6,7 @@ import { Checkbox } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 
 // =================================================================
-// TASK ITEM COMPONENT
+// TASK ITEM COMPONENT - Elegant Card Style
 // =================================================================
 
 interface TaskItemProps {
@@ -33,17 +33,21 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
             layout
             className={`
         group relative flex items-start gap-3
-        p-3 rounded-lg
-        transition-colors duration-200
-        ${task.completed ? 'opacity-60' : ''}
-        ${isDeep ? 'cursor-pointer hover:bg-bg-glass' : ''}
+        p-3 sm:p-4 rounded-xl
+        bg-bg-tertiary/50 hover:bg-bg-tertiary
+        border border-transparent hover:border-border-subtle
+        transition-all duration-200
+        ${task.completed ? 'opacity-50' : ''}
+        ${isDeep ? 'cursor-pointer' : ''}
       `}
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: task.completed ? 0.6 : 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: task.completed ? 0.5 : 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.15 }}
         >
             {/* Checkbox */}
-            <div className="pt-0.5">
+            <div className="pt-0.5 flex-shrink-0">
                 <Checkbox
                     checked={task.completed}
                     onCheckedChange={handleToggle}
@@ -57,8 +61,12 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
             >
                 <p
                     className={`
-            text-sm leading-relaxed
-            ${task.completed ? 'line-through text-text-muted' : 'text-text-primary'}
+            text-sm sm:text-base leading-relaxed
+            transition-all duration-200
+            ${task.completed
+                            ? 'line-through text-text-muted'
+                            : 'text-text-primary'
+                        }
           `}
                 >
                     {task.title}
@@ -66,9 +74,14 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
 
                 {/* Deep Task Indicator */}
                 {isDeep && !isExpanded && (
-                    <span className="text-xs text-text-muted mt-1 block">
-                        📝 Click to expand
-                    </span>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-text-muted bg-bg-glass px-2 py-0.5 rounded-full">
+                            📝 Notes
+                        </span>
+                        <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click to expand
+                        </span>
+                    </div>
                 )}
 
                 {/* Expanded Content for Deep Tasks */}
@@ -77,20 +90,41 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-3 pt-3 border-t border-border-subtle"
+                        className="mt-4 pt-4 border-t border-border-subtle"
                     >
-                        <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans">
-                            {task.content || 'No content yet...'}
-                        </pre>
+                        <div className="bg-bg-glass rounded-lg p-4">
+                            <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed">
+                                {task.content || 'No content yet. Click to add notes...'}
+                            </pre>
+                        </div>
                     </motion.div>
                 )}
             </div>
 
             {/* Type Badge */}
             {isDeep && (
-                <span className="px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-bg-tertiary text-text-muted rounded">
-                    deep
-                </span>
+                <motion.span
+                    className="
+            px-2 py-1 text-[10px] uppercase tracking-wider font-medium
+            bg-accent-primary/10 text-accent-primary
+            rounded-md flex-shrink-0
+          "
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                >
+                    Deep
+                </motion.span>
+            )}
+
+            {/* Completion Celebration */}
+            {task.completed && (
+                <motion.div
+                    className="absolute inset-0 rounded-xl pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                >
+                    <div className="absolute inset-0 bg-success/5 rounded-xl" />
+                </motion.div>
             )}
         </motion.div>
     );
