@@ -1,4 +1,4 @@
-import type { Task } from '../../lib/db';
+import type { Task, Recurrence } from '../../lib/db';
 
 // =================================================================
 // COMMAND BAR TYPES
@@ -12,6 +12,7 @@ export interface CommandState {
     parsedTitle?: string;
     parsedDate?: Date;
     parsedDateDisplay?: string;
+    parsedRecurrence?: Recurrence;
     hasTime?: boolean;
 }
 

@@ -53,7 +53,8 @@ export async function addTask(
     title: string,
     dueDate: Date,
     type: TaskType = 'quick',
-    content = ''
+    content = '',
+    recurrence?: Task['recurrence']
 ): Promise<string> {
     const id = generateId();
     const now = Date.now();
@@ -68,6 +69,7 @@ export async function addTask(
         createdAt: now,
         updatedAt: now,
         order: now,
+        recurrence,
     };
 
     await db.tasks.add(task);

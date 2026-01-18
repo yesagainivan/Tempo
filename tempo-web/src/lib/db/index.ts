@@ -6,6 +6,16 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type TaskType = 'quick' | 'deep';
 
+export type RecurrencePattern = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export interface Recurrence {
+    pattern: RecurrencePattern;
+    interval: number;              // every N days/weeks/months/years
+    daysOfWeek?: number[];         // 0-6 for weekly (0=Sunday)
+    endDate?: number;              // optional end timestamp
+    occurrences?: number;          // optional max occurrences
+}
+
 export interface Task {
     id: string;
     title: string;
@@ -17,6 +27,11 @@ export interface Task {
     createdAt: number;
     updatedAt: number;
     order: number; // For manual sorting within a day
+
+    // Recurring task fields
+    recurrence?: Recurrence;       // recurrence pattern (only on templates)
+    recurringParentId?: string;    // links instance to template
+    isRecurringInstance?: boolean; // true for generated instances
 }
 
 // =================================================================
@@ -29,9 +44,14 @@ class TempoDatabase extends Dexie {
     constructor() {
         super('tempo');
 
+        // v1: Initial schema
         this.version(1).stores({
-            // Primary key + indexed fields
             tasks: 'id, dueDate, completed, createdAt, type, [dueDate+order]',
+        });
+
+        // v2: Add recurring task support
+        this.version(2).stores({
+            tasks: 'id, dueDate, completed, createdAt, type, [dueDate+order], recurringParentId',
         });
     }
 }
@@ -150,7 +170,7 @@ export async function deleteTask(taskId: string): Promise<void> {
  */
 export async function updateTask(
     taskId: string,
-    updates: Partial<Pick<Task, 'title' | 'type' | 'content'>>
+    updates: Partial<Pick<Task, 'title' | 'type' | 'content' | 'recurrence'>>
 ): Promise<void> {
     await db.tasks.update(taskId, {
         ...updates,

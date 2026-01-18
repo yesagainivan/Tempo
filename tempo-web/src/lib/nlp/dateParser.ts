@@ -28,9 +28,17 @@ export interface ParsedDate {
     hasTime: boolean;
 }
 
+export interface ParsedRecurrence {
+    pattern: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval: number;
+    daysOfWeek?: number[];  // 0-6 for weekly (0=Sunday)
+    matched: string;
+}
+
 export interface ParseResult {
     title: string;
     parsedDate: ParsedDate | null;
+    parsedRecurrence: ParsedRecurrence | null;
 }
 
 // Weekday name to next* function mapping
@@ -68,6 +76,17 @@ const MONTHS: Record<string, number> = {
     'october': 9, 'oct': 9,
     'november': 10, 'nov': 10,
     'december': 11, 'dec': 11,
+};
+
+// Weekday name to index mapping for recurrence
+const WEEKDAY_INDICES: Record<string, number> = {
+    'sunday': 0, 'sun': 0,
+    'monday': 1, 'mon': 1,
+    'tuesday': 2, 'tue': 2, 'tues': 2,
+    'wednesday': 3, 'wed': 3,
+    'thursday': 4, 'thu': 4, 'thur': 4, 'thurs': 4,
+    'friday': 5, 'fri': 5,
+    'saturday': 6, 'sat': 6,
 };
 
 /**
@@ -169,7 +188,7 @@ function parseWeekday(text: string, now: Date): ParsedDate | null {
         const weekday = prefixMatch[2].toLowerCase();
         const parser = WEEKDAY_PARSERS[weekday];
         if (parser) {
-            let date = parser(now);
+            const date = parser(now);
             // "next" already gives next occurrence, but if it's "this" and we're past it, still use next
             return { date: startOfDay(date), matched: prefixMatch[0], hasTime: false };
         }
@@ -198,7 +217,7 @@ function parseExplicit(text: string, now: Date): ParsedDate | null {
         const monthNum = MONTHS[monthName];
 
         if (monthNum !== undefined) {
-            let year = now.getFullYear();
+            const year = now.getFullYear();
             const date = new Date(year, monthNum, day);
             // If the date is in the past, assume next year
             if (date < now) {
@@ -218,7 +237,7 @@ function parseExplicit(text: string, now: Date): ParsedDate | null {
         const monthNum = MONTHS[monthName];
 
         if (monthNum !== undefined) {
-            let year = now.getFullYear();
+            const year = now.getFullYear();
             const date = new Date(year, monthNum, day);
             if (date < now) {
                 date.setFullYear(year + 1);
@@ -234,7 +253,7 @@ function parseExplicit(text: string, now: Date): ParsedDate | null {
     if (slashMatch) {
         const month = parseInt(slashMatch[1], 10) - 1;
         const day = parseInt(slashMatch[2], 10);
-        let year = now.getFullYear();
+        const year = now.getFullYear();
         const date = new Date(year, month, day);
         if (date < now) {
             date.setFullYear(year + 1);
@@ -257,50 +276,89 @@ function parseExplicit(text: string, now: Date): ParsedDate | null {
 }
 
 /**
- * Main parser: extracts date from end of string
- * Returns the title (without date) and parsed date
+ * Parse recurrence patterns like "every day", "every monday", "every 2 weeks"
  */
-export function parseTaskInput(input: string, now: Date = new Date()): ParseResult {
-    const trimmed = input.trim();
-    if (!trimmed) {
-        return { title: '', parsedDate: null };
+function parseRecurrence(text: string): ParsedRecurrence | null {
+    const lower = text.toLowerCase().trim();
+
+    // Simple patterns: "daily", "weekly", "monthly", "yearly"
+    if (/^daily$/i.test(lower)) {
+        return { pattern: 'daily', interval: 1, matched: lower };
+    }
+    if (/^weekly$/i.test(lower)) {
+        return { pattern: 'weekly', interval: 1, matched: lower };
+    }
+    if (/^monthly$/i.test(lower)) {
+        return { pattern: 'monthly', interval: 1, matched: lower };
+    }
+    if (/^yearly$/i.test(lower) || /^annually$/i.test(lower)) {
+        return { pattern: 'yearly', interval: 1, matched: lower };
     }
 
-    // Try parsing the entire string as a date (for /go command)
-    const wholeDate = tryParseDate(trimmed, now);
-    if (wholeDate) {
-        return { title: '', parsedDate: wholeDate };
+    // "every day" / "every week" / "every month" / "every year"
+    if (/^every\s+day$/i.test(lower)) {
+        return { pattern: 'daily', interval: 1, matched: lower };
+    }
+    if (/^every\s+week$/i.test(lower)) {
+        return { pattern: 'weekly', interval: 1, matched: lower };
+    }
+    if (/^every\s+month$/i.test(lower)) {
+        return { pattern: 'monthly', interval: 1, matched: lower };
+    }
+    if (/^every\s+year$/i.test(lower)) {
+        return { pattern: 'yearly', interval: 1, matched: lower };
     }
 
-    // Try to find date at the end of the string
-    // We try progressively shorter suffixes
-    const words = trimmed.split(/\s+/);
+    // "every N days/weeks/months/years"
+    const everyNMatch = lower.match(/^every\s+(\d+)\s+(day|days|week|weeks|month|months|year|years)$/i);
+    if (everyNMatch) {
+        const interval = parseInt(everyNMatch[1], 10);
+        const unit = everyNMatch[2].toLowerCase();
 
-    for (let i = 1; i <= Math.min(words.length - 1, 5); i++) {
-        const potentialDate = words.slice(-i).join(' ');
-        const parsed = tryParseDate(potentialDate, now);
-
-        if (parsed) {
-            // Check for time modifier in remaining text
-            const titleWords = words.slice(0, -i);
-            const title = titleWords.join(' ');
-
-            // Look for time in the date portion
-            const time = parseTime(potentialDate);
-            if (time) {
-                parsed.date = setHours(setMinutes(parsed.date, time.minutes), time.hours);
-                parsed.hasTime = true;
-            }
-
-            return {
-                title: title.trim(),
-                parsedDate: parsed,
-            };
+        if (unit.startsWith('day')) {
+            return { pattern: 'daily', interval, matched: lower };
+        }
+        if (unit.startsWith('week')) {
+            return { pattern: 'weekly', interval, matched: lower };
+        }
+        if (unit.startsWith('month')) {
+            return { pattern: 'monthly', interval, matched: lower };
+        }
+        if (unit.startsWith('year')) {
+            return { pattern: 'yearly', interval, matched: lower };
         }
     }
 
-    // No date found, return entire input as title
-    return { title: trimmed, parsedDate: null };
+    // "every monday" / "every friday" (single day)
+    const everyWeekdayMatch = lower.match(/^every\s+(\w+)$/i);
+    if (everyWeekdayMatch) {
+        const dayName = everyWeekdayMatch[1].toLowerCase();
+        const dayIndex = WEEKDAY_INDICES[dayName];
+        if (dayIndex !== undefined) {
+            return { pattern: 'weekly', interval: 1, daysOfWeek: [dayIndex], matched: lower };
+        }
+    }
+
+    // "every mon,wed,fri" or "every monday, wednesday, friday"
+    const everyMultipleDaysMatch = lower.match(/^every\s+([\w,\s]+)$/i);
+    if (everyMultipleDaysMatch) {
+        const daysStr = everyMultipleDaysMatch[1];
+        const dayNames = daysStr.split(/[,\s]+/).filter(Boolean);
+        const dayIndices: number[] = [];
+
+        for (const name of dayNames) {
+            const index = WEEKDAY_INDICES[name.toLowerCase()];
+            if (index !== undefined && !dayIndices.includes(index)) {
+                dayIndices.push(index);
+            }
+        }
+
+        if (dayIndices.length > 0) {
+            return { pattern: 'weekly', interval: 1, daysOfWeek: dayIndices.sort((a, b) => a - b), matched: lower };
+        }
+    }
+
+    return null;
 }
 
 /**
@@ -325,6 +383,78 @@ function tryParseDate(text: string, now: Date): ParsedDate | null {
     }
 
     return result;
+}
+
+/**
+ * Main parser: extracts date and recurrence from input string
+ * Returns the title (without date/recurrence) and parsed values
+ */
+export function parseTaskInput(input: string, now: Date = new Date()): ParseResult {
+    const trimmed = input.trim();
+    if (!trimmed) {
+        return { title: '', parsedDate: null, parsedRecurrence: null };
+    }
+
+    // Try parsing the entire string as a date (for /go command)
+    const wholeDate = tryParseDate(trimmed, now);
+    if (wholeDate) {
+        return { title: '', parsedDate: wholeDate, parsedRecurrence: null };
+    }
+
+    const words = trimmed.split(/\s+/);
+    let parsedRecurrence: ParsedRecurrence | null = null;
+    let parsedDate: ParsedDate | null = null;
+    let titleEndIndex = words.length;
+
+    // Try to find recurrence at the end of string first (e.g., "Water plants every 3 days")
+    for (let i = 1; i <= Math.min(words.length - 1, 5); i++) {
+        const potentialRecurrence = words.slice(-i).join(' ');
+        const recurrence = parseRecurrence(potentialRecurrence);
+
+        if (recurrence) {
+            parsedRecurrence = recurrence;
+            titleEndIndex = words.length - i;
+            break;
+        }
+    }
+
+    // Now try to find date in remaining words
+    const remainingWords = words.slice(0, titleEndIndex);
+
+    for (let i = 1; i <= Math.min(remainingWords.length - 1, 5); i++) {
+        const potentialDate = remainingWords.slice(-i).join(' ');
+        const parsed = tryParseDate(potentialDate, now);
+
+        if (parsed) {
+            // Look for time in the date portion
+            const time = parseTime(potentialDate);
+            if (time) {
+                parsed.date = setHours(setMinutes(parsed.date, time.minutes), time.hours);
+                parsed.hasTime = true;
+            }
+
+            parsedDate = parsed;
+            titleEndIndex = remainingWords.length - i;
+            break;
+        }
+    }
+
+    // Extract title from remaining words
+    const titleWords = parsedRecurrence
+        ? words.slice(0, titleEndIndex)
+        : remainingWords.slice(0, titleEndIndex);
+    const title = titleWords.join(' ').trim();
+
+    // If we found recurrence but no date, default to today for the first occurrence
+    if (parsedRecurrence && !parsedDate) {
+        parsedDate = { date: startOfDay(now), matched: 'today', hasTime: false };
+    }
+
+    return {
+        title: title || trimmed,
+        parsedDate,
+        parsedRecurrence,
+    };
 }
 
 /**

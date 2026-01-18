@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Task } from '../../lib/db';
+import { db, type Task, type Recurrence } from '../../lib/db';
 import { addTask } from '../../stores/appStore';
 import { parseTaskInput, formatParsedDate } from '../../lib/nlp/dateParser';
+import { formatRecurrence } from '../../lib/db/recurrence';
 import { fuzzySearch, highlightMatches } from '../../lib/search/fuzzySearch';
 import type { CommandMode, CommandState, SearchResult } from './types';
 
@@ -39,6 +40,7 @@ export function useCommandBar(options: UseCommandBarOptions) {
             let parsedTitle: string;
             let parsedDate: Date | undefined;
             let parsedDateDisplay: string | undefined;
+            let parsedRecurrence: Recurrence | undefined;
             let hasTime = false;
 
             if (delimiterIndex !== -1) {
@@ -51,6 +53,14 @@ export function useCommandBar(options: UseCommandBarOptions) {
                     ? formatParsedDate(parsed.parsedDate)
                     : undefined;
                 hasTime = parsed.parsedDate?.hasTime || false;
+                // Convert ParsedRecurrence to Recurrence
+                if (parsed.parsedRecurrence) {
+                    parsedRecurrence = {
+                        pattern: parsed.parsedRecurrence.pattern,
+                        interval: parsed.parsedRecurrence.interval,
+                        daysOfWeek: parsed.parsedRecurrence.daysOfWeek,
+                    };
+                }
             } else {
                 // No delimiter: try smart parsing from end
                 const parsed = parseTaskInput(remainder);
@@ -60,14 +70,28 @@ export function useCommandBar(options: UseCommandBarOptions) {
                     ? formatParsedDate(parsed.parsedDate)
                     : undefined;
                 hasTime = parsed.parsedDate?.hasTime || false;
+                // Convert ParsedRecurrence to Recurrence
+                if (parsed.parsedRecurrence) {
+                    parsedRecurrence = {
+                        pattern: parsed.parsedRecurrence.pattern,
+                        interval: parsed.parsedRecurrence.interval,
+                        daysOfWeek: parsed.parsedRecurrence.daysOfWeek,
+                    };
+                }
             }
+
+            // Build display with recurrence
+            let displayParts: string[] = [];
+            if (parsedDateDisplay) displayParts.push(parsedDateDisplay);
+            if (parsedRecurrence) displayParts.push(formatRecurrence(parsedRecurrence));
 
             return {
                 mode: 'create' as CommandMode,
                 input: remainder,
                 parsedTitle,
                 parsedDate,
-                parsedDateDisplay,
+                parsedDateDisplay: displayParts.length > 0 ? displayParts.join(' • ') : undefined,
+                parsedRecurrence,
                 hasTime,
             };
         }
@@ -150,7 +174,13 @@ export function useCommandBar(options: UseCommandBarOptions) {
         }
 
         const dueDate = commandState.parsedDate || new Date();
-        const taskId = await addTask(commandState.parsedTitle, dueDate);
+        const taskId = await addTask(
+            commandState.parsedTitle,
+            dueDate,
+            'quick',
+            '',
+            commandState.parsedRecurrence
+        );
 
         onCreateTask?.(taskId, dueDate);
         onClose?.();

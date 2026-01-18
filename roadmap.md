@@ -173,16 +173,21 @@ Track productivity patterns and celebrate progress.
 
 ---
 
-### 7. Recurring Tasks ⏳
+### 7. Recurring Tasks 🔄
 Tasks that repeat on a schedule.
 
 **Requirements:**
-- [ ] Recurrence patterns: daily, weekly, monthly, yearly
-- [ ] Custom intervals (every N days/weeks)
-- [ ] Day-of-week selection for weekly tasks
+- [x] Recurrence patterns: daily, weekly, monthly, yearly
+- [x] Custom intervals (every N days/weeks)
+- [x] Day-of-week selection for weekly tasks
 - [ ] Optional end date or "X occurrences"
 - [ ] Skip/complete instance without affecting series
-- [ ] Natural language: `/task Water plants every 3 days`
+- [x] Natural language: `/task Water plants every 3 days`
+
+Remaining Work
+ Instance generation on task query (currently schema-only)
+ End date / occurrence limit in RecurrencePicker
+ Skip instance functionality
 
 **Schema:**
 ```typescript
@@ -215,6 +220,11 @@ Organize tasks by morning, afternoon, evening.
 - [ ] Manual drag between sections
 - [ ] Collapsible sections
 - [ ] Optional time estimates per task
+
+---
+
+### 5.5. Hover card ⏳
+Introduce hover cards when hovering over dates in the timeline for task details.
 
 ---
 

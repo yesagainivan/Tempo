@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../lib/db';
 import { toggleTaskComplete, deleteTask, updateTask } from '../../lib/db';
 import { Checkbox, ConfirmDialog, TaskEditModal } from '../ui';
+import { RecurrenceBadge } from '../ui/RecurrencePicker';
 import { TrashIcon, PencilIcon, DocumentIcon, LightningIcon, NoteIcon } from '../icons';
 import { useAppStore } from '../../stores/appStore';
 import { DeepTaskEditor } from './DeepTaskEditor';
@@ -115,9 +116,19 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                             <NoteIcon className="w-3 h-3" />
                             Notes
                         </span>
+                        {task.recurrence && (
+                            <RecurrenceBadge recurrence={task.recurrence} />
+                        )}
                         <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
                             Click to expand
                         </span>
+                    </div>
+                )}
+
+                {/* Quick Task - Recurrence Badge (when not deep) */}
+                {!isDeep && task.recurrence && !task.completed && (
+                    <div className="mt-1">
+                        <RecurrenceBadge recurrence={task.recurrence} />
                     </div>
                 )}
 
@@ -207,9 +218,21 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 isOpen={isDeleting}
                 onClose={() => setIsDeleting(false)}
                 onConfirm={handleDelete}
-                title="Delete Task"
-                description={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
-                confirmText="Delete"
+                title={
+                    task.recurrence
+                        ? 'Delete Recurring Task'
+                        : task.isRecurringInstance
+                            ? 'Delete This Occurrence'
+                            : 'Delete Task'
+                }
+                description={
+                    task.recurrence
+                        ? `Are you sure you want to delete "${task.title}"? This will stop all future occurrences.`
+                        : task.isRecurringInstance
+                            ? `This will only delete this single occurrence of "${task.title}". Future occurrences will not be affected.`
+                            : `Are you sure you want to delete "${task.title}"? This action cannot be undone.`
+                }
+                confirmText={task.recurrence ? 'Delete All' : 'Delete'}
                 variant="danger"
             />
 

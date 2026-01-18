@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import type { Task } from '../../lib/db';
+import type { Task, Recurrence } from '../../lib/db';
 import { updateTask, rescheduleTask } from '../../lib/db';
 import { Button } from './Button';
 import { Input } from './Input';
+import { RecurrencePicker } from './RecurrencePicker';
 
 // =================================================================
 // TASK EDIT MODAL
@@ -19,6 +20,7 @@ interface TaskEditModalProps {
 export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
     const [title, setTitle] = useState('');
     const [dueDate, setDueDate] = useState('');
+    const [recurrence, setRecurrence] = useState<Recurrence | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
 
     // Sync state when task changes
@@ -28,6 +30,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
             // Format date for input[type="date"]
             const date = new Date(task.dueDate);
             setDueDate(date.toISOString().split('T')[0]);
+            setRecurrence(task.recurrence);
         }
     }, [task]);
 
@@ -36,9 +39,23 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
 
         setIsSaving(true);
         try {
+            // Collect all updates
+            const updates: Partial<Pick<Task, 'title' | 'recurrence'>> = {};
+
             // Update title if changed
             if (title.trim() !== task.title) {
-                await updateTask(task.id, { title: title.trim() });
+                updates.title = title.trim();
+            }
+
+            // Update recurrence if changed
+            const recurrenceChanged = JSON.stringify(recurrence) !== JSON.stringify(task.recurrence);
+            if (recurrenceChanged) {
+                updates.recurrence = recurrence;
+            }
+
+            // Apply updates if any
+            if (Object.keys(updates).length > 0) {
+                await updateTask(task.id, updates);
             }
 
             // Reschedule if date changed
@@ -55,7 +72,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
         } finally {
             setIsSaving(false);
         }
-    }, [task, title, dueDate, onClose]);
+    }, [task, title, dueDate, recurrence, onClose]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -74,6 +91,9 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
     }, [isOpen, onClose, handleSave]);
 
     if (!task) return null;
+
+    // Don't show recurrence for generated instances
+    const showRecurrence = !task.isRecurringInstance;
 
     return createPortal(
         <AnimatePresence>
@@ -98,7 +118,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                     >
                         <div className="p-6">
                             <h2 className="text-lg font-semibold text-text-primary mb-4">
-                                Edit Task
+                                {task.isRecurringInstance ? 'Edit Instance' : 'Edit Task'}
                             </h2>
 
                             <div className="space-y-4">
@@ -133,6 +153,16 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                         "
                                     />
                                 </div>
+
+                                {/* Recurrence Picker */}
+                                {showRecurrence && (
+                                    <div className="pt-2">
+                                        <RecurrencePicker
+                                            value={recurrence}
+                                            onChange={setRecurrence}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {/* Actions */}
@@ -169,3 +199,4 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
         document.body
     );
 }
+
