@@ -2,8 +2,8 @@ import { memo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Task } from '../../lib/db';
 import { toggleTaskComplete, deleteTask } from '../../lib/db';
-import { Checkbox, ConfirmDialog } from '../ui';
-import { TrashIcon } from '../icons';
+import { Checkbox, ConfirmDialog, TaskEditModal } from '../ui';
+import { TrashIcon, PencilIcon } from '../icons';
 import { useAppStore } from '../../stores/appStore';
 
 // =================================================================
@@ -19,6 +19,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
     const isExpanded = expandedTaskId === task.id;
     const isDeep = task.type === 'deep';
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     const handleToggle = async () => {
         await toggleTaskComplete(task.id);
@@ -30,7 +31,11 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
 
     const handleClick = () => {
         if (isDeep) {
+            // Deep tasks expand to show notes
             setExpandedTaskId(isExpanded ? null : task.id);
+        } else {
+            // Quick tasks open edit modal
+            setIsEditing(true);
         }
     };
 
@@ -44,7 +49,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
         border border-transparent hover:border-border-subtle
         transition-all duration-200
         ${task.completed ? 'opacity-50' : ''}
-        ${isDeep ? 'cursor-pointer' : ''}
+        cursor-pointer
       `}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: task.completed ? 0.5 : 1, y: 0 }}
@@ -90,6 +95,13 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                     </div>
                 )}
 
+                {/* Quick Task Hint */}
+                {!isDeep && !task.completed && (
+                    <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+                        Click to edit
+                    </span>
+                )}
+
                 {/* Expanded Content for Deep Tasks */}
                 {isDeep && isExpanded && (
                     <motion.div
@@ -107,11 +119,24 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 )}
             </div>
 
-            {/* Delete Button (Hover) */}
+            {/* Action Buttons (Hover) */}
             <div className={`
+                flex items-center gap-1
                 opacity-0 group-hover:opacity-100 transition-opacity duration-200
                 ${task.completed ? 'opacity-0' : ''}
             `}>
+                {/* Edit Button */}
+                <button
+                    className="p-1.5 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(true);
+                    }}
+                >
+                    <PencilIcon className="w-4 h-4" />
+                </button>
+
+                {/* Delete Button */}
                 <button
                     className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors"
                     onClick={(e) => {
@@ -123,7 +148,14 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 </button>
             </div>
 
-            {/* Confirmation Dialog */}
+            {/* Edit Modal */}
+            <TaskEditModal
+                task={task}
+                isOpen={isEditing}
+                onClose={() => setIsEditing(false)}
+            />
+
+            {/* Delete Confirmation Dialog */}
             <ConfirmDialog
                 isOpen={isDeleting}
                 onClose={() => setIsDeleting(false)}
@@ -163,4 +195,3 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
         </motion.div>
     );
 });
-

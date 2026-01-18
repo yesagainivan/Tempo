@@ -144,3 +144,16 @@ export async function rescheduleTask(taskId: string, newDate: Date): Promise<voi
 export async function deleteTask(taskId: string): Promise<void> {
     await db.tasks.delete(taskId);
 }
+
+/**
+ * Update task fields (title, type, etc.)
+ */
+export async function updateTask(
+    taskId: string,
+    updates: Partial<Pick<Task, 'title' | 'type' | 'content'>>
+): Promise<void> {
+    await db.tasks.update(taskId, {
+        ...updates,
+        updatedAt: Date.now(),
+    });
+}

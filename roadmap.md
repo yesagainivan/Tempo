@@ -51,8 +51,8 @@ Simple, fast task capture anchored to time.
 - [x] Inline task creation (InlineTaskCreator)
 - [x] Checkbox with completion animation
 - [x] Task text display
+- [x] Task editing modal (title + reschedule)
 - [ ] Drag to reschedule (stretch goal)
-- [ ] Task editing modal
 
 ---
 

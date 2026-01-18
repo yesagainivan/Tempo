@@ -73,3 +73,9 @@ coverage/
 # Tauri (future)
 # ===================
 src-tauri/target/
+
+
+# ===================
+# Icons
+# ===================
+tempo-style/icons
