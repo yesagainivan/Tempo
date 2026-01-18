@@ -56,14 +56,14 @@ Simple, fast task capture anchored to time.
 
 ---
 
-### 4. Deep Tasks (Markdown Notes) ⏳
+### 4. Deep Tasks (Markdown Notes) ✅
 Tasks that expand into full context documents.
 
 **Requirements:**
-- [ ] "Bloom" animation to expand task into editor
-- [ ] Markdown rendering (headings, lists, code, links)
-- [ ] `[ ]` checkbox syntax creates interactive subtasks
-- [ ] Collapse back to single-line task view
+- [x] "Bloom" animation to expand task into editor
+- [x] Markdown rendering (headings, lists, code, links)
+- [x] `[ ]` checkbox syntax creates interactive subtasks
+- [x] Collapse back to single-line task view
 - [ ] YAML frontmatter for metadata (due date, priority)
 
 ---

@@ -137,3 +137,39 @@ export const HomeIcon = (props: IconProps) => (
         <polyline points="9 22 9 12 15 12 15 22" />
     </IconBase>
 );
+
+export const DocumentIcon = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" x2="8" y1="13" y2="13" />
+        <line x1="16" x2="8" y1="17" y2="17" />
+        <line x1="10" x2="8" y1="9" y2="9" />
+    </IconBase>
+);
+
+export const LightningIcon = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+    </IconBase>
+);
+
+export const EyeIcon = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+        <circle cx="12" cy="12" r="3" />
+    </IconBase>
+);
+
+export const NoteIcon = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z" />
+        <path d="M15 3v4a2 2 0 0 0 2 2h4" />
+    </IconBase>
+);
+
+export const ChevronUpIcon = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="m18 15-6-6-6 6" />
+    </IconBase>
+);

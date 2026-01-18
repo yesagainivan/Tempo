@@ -1,10 +1,11 @@
 import { memo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../lib/db';
-import { toggleTaskComplete, deleteTask } from '../../lib/db';
+import { toggleTaskComplete, deleteTask, updateTask } from '../../lib/db';
 import { Checkbox, ConfirmDialog, TaskEditModal } from '../ui';
-import { TrashIcon, PencilIcon } from '../icons';
+import { TrashIcon, PencilIcon, DocumentIcon, LightningIcon, NoteIcon } from '../icons';
 import { useAppStore } from '../../stores/appStore';
+import { DeepTaskEditor } from './DeepTaskEditor';
 
 // =================================================================
 // TASK ITEM COMPONENT - Elegant Card Style
@@ -20,6 +21,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
     const isDeep = task.type === 'deep';
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isDemoting, setIsDemoting] = useState(false);
 
     const handleToggle = async () => {
         await toggleTaskComplete(task.id);
@@ -39,22 +41,45 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
         }
     };
 
+    // Promote quick task to deep task (instant)
+    const handlePromote = async () => {
+        await updateTask(task.id, { type: 'deep' });
+        // Auto-expand for immediate editing
+        setExpandedTaskId(task.id);
+    };
+
+    // Demote deep task to quick task (needs confirmation if has content)
+    const handleDemote = async () => {
+        if (task.content && task.content.trim()) {
+            // Has content - show confirmation
+            setIsDemoting(true);
+        } else {
+            // No content - demote immediately
+            await updateTask(task.id, { type: 'quick', content: '' });
+        }
+    };
+
+    const confirmDemote = async () => {
+        await updateTask(task.id, { type: 'quick', content: '' });
+        setExpandedTaskId(null);
+        setIsDemoting(false);
+    };
+
     return (
         <motion.div
-            layout
             className={`
         group relative flex items-start gap-3
         p-3 sm:p-4 rounded-xl
-        bg-bg-tertiary/50 hover:bg-bg-tertiary
-        border border-transparent hover:border-border-subtle
+        bg-bg-tertiary/50
+        border border-transparent
         transition-all duration-200
         ${task.completed ? 'opacity-50' : ''}
-        cursor-pointer
+        ${isExpanded ? 'bg-bg-tertiary border-border-subtle' : 'hover:bg-bg-tertiary hover:border-border-subtle cursor-pointer'}
       `}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: task.completed ? 0.5 : 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            whileHover={{ scale: 1.01 }}
+            whileHover={isExpanded ? undefined : { scale: 1.01 }}
             transition={{ duration: 0.15 }}
         >
             {/* Checkbox */}
@@ -86,8 +111,9 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 {/* Deep Task Indicator */}
                 {isDeep && !isExpanded && (
                     <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-text-muted bg-bg-glass px-2 py-0.5 rounded-full">
-                            📝 Notes
+                        <span className="flex items-center gap-1 text-xs text-text-muted bg-bg-glass px-2 py-0.5 rounded-full">
+                            <NoteIcon className="w-3 h-3" />
+                            Notes
                         </span>
                         <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
                             Click to expand
@@ -103,28 +129,49 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 )}
 
                 {/* Expanded Content for Deep Tasks */}
-                {isDeep && isExpanded && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-4 pt-4 border-t border-border-subtle"
-                    >
-                        <div className="bg-bg-glass rounded-lg p-4">
-                            <pre className="text-sm text-text-secondary whitespace-pre-wrap font-sans leading-relaxed">
-                                {task.content || 'No content yet. Click to add notes...'}
-                            </pre>
-                        </div>
-                    </motion.div>
-                )}
+                <AnimatePresence>
+                    {isDeep && isExpanded && (
+                        <DeepTaskEditor
+                            task={task}
+                            onCollapse={() => setExpandedTaskId(null)}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
 
-            {/* Action Buttons (Hover) */}
+            {/* Action Buttons - always visible when expanded, hover otherwise */}
             <div className={`
                 flex items-center gap-1
-                opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                transition-opacity duration-200
+                ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
                 ${task.completed ? 'opacity-0' : ''}
             `}>
+                {/* Type Toggle Button */}
+                <button
+                    className={`
+                        p-1.5 text-text-muted rounded-lg transition-colors
+                        ${isDeep
+                            ? 'hover:text-warning hover:bg-warning/10'
+                            : 'hover:text-accent-primary hover:bg-accent-primary/10'
+                        }
+                    `}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (isDeep) {
+                            handleDemote();
+                        } else {
+                            handlePromote();
+                        }
+                    }}
+                    title={isDeep ? 'Convert to quick task' : 'Add notes (deep task)'}
+                >
+                    {isDeep ? (
+                        <LightningIcon className="w-4 h-4" />
+                    ) : (
+                        <DocumentIcon className="w-4 h-4" />
+                    )}
+                </button>
+
                 {/* Edit Button */}
                 <button
                     className="p-1.5 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors"
@@ -166,20 +213,31 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 variant="danger"
             />
 
-            {/* Type Badge */}
-            {isDeep && (
-                <motion.span
+            {/* Demote Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={isDemoting}
+                onClose={() => setIsDemoting(false)}
+                onConfirm={confirmDemote}
+                title="Convert to Quick Task"
+                description="This will delete all notes attached to this task. This action cannot be undone."
+                confirmText="Delete Notes"
+                variant="danger"
+            />
+
+            {/* Type Badge - hide on hover and when expanded */}
+            {isDeep && !isExpanded && (
+                <span
                     className="
             absolute top-3 right-3
             px-2 py-1 text-[10px] uppercase tracking-wider font-medium
             bg-accent-primary/10 text-accent-primary
             rounded-md flex-shrink-0
+            opacity-100 group-hover:opacity-0 transition-opacity duration-200
+            animate-[fadeIn_0.2s_ease-out]
           "
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
                 >
                     Deep
-                </motion.span>
+                </span>
             )}
 
             {/* Completion Celebration */}

@@ -15,7 +15,7 @@ import type { Task } from './lib/db';
 type ViewMode = 'home' | 'day';
 
 function App() {
-  const { isCommandBarOpen, toggleCommandBar, closeCommandBar } = useAppStore();
+  const { isCommandBarOpen, toggleCommandBar, closeCommandBar, setExpandedTaskId } = useAppStore();
 
   // Navigation state
   const [viewMode, setViewMode] = useState<ViewMode>('home');
@@ -23,13 +23,15 @@ function App() {
 
   // Navigation handlers
   const handleSelectDate = useCallback((date: Date) => {
+    setExpandedTaskId(null); // Collapse any expanded task
     setSelectedDate(date);
     setViewMode('day');
-  }, []);
+  }, [setExpandedTaskId]);
 
   const handleBackToHome = useCallback(() => {
+    setExpandedTaskId(null); // Collapse any expanded task
     setViewMode('home');
-  }, []);
+  }, [setExpandedTaskId]);
 
   const handleDateChange = useCallback((date: Date) => {
     setSelectedDate(date);
