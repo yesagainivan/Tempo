@@ -20,45 +20,43 @@
 
 ## MVP Features (Phase 1)
 
-### 1. Infinite Timeline (Chronicle) ✅
-The signature feature. Vertical scrolling through past, present, future.
+### 1. Calendar View ✅
+Monthly calendar grid as the primary landing experience.
 
 **Requirements:**
-- [x] Virtualized rendering (@tanstack/react-virtual)
-- [x] Bi-directional infinite scroll (10 years)
-- [x] Day headers with date formatting
-- [x] Smooth scroll to "today" on load
-- [x] Visual distinction for past/present/future
-- [x] Glassmorphic card design
-- [x] Sticky month/year header
-
-**Performance Target:** 60fps scrolling, <16ms render per frame
+- [x] Month grid with day cells
+- [x] Task count indicators per day (dots)
+- [x] Click to navigate to Day Agenda
+- [x] Month navigation (prev/next)
+- [ ] Week view toggle (stretch)
 
 ---
 
-### 1b. Calendar View (Future) ⏳
-Monthly calendar grid for agenda navigation.
+### 2. Day Agenda View ✅
+Focused view for a single day's tasks.
 
 **Requirements:**
-- [ ] Month grid with day cells
-- [ ] Task count indicators per day
-- [ ] Click to navigate to day in Timeline
-- [ ] Week/Month view toggle
+- [x] Full task list for selected day
+- [x] Day navigation (prev/today/next)
+- [x] Back to calendar navigation
+- [x] Stats display (completed/total)
+- [x] Glassmorphic design with today highlight
 
 ---
 
-### 2. Quick Tasks ⏳
+### 3. Quick Tasks ✅
 Simple, fast task capture anchored to time.
 
 **Requirements:**
-- [ ] Inline task creation on timeline
-- [ ] Checkbox with satisfying completion animation
+- [x] Inline task creation (InlineTaskCreator)
+- [x] Checkbox with completion animation
+- [x] Task text display
 - [ ] Drag to reschedule (stretch goal)
-- [ ] Task text editing
+- [ ] Task editing modal
 
 ---
 
-### 3. Deep Tasks (Markdown Notes) ⏳
+### 4. Deep Tasks (Markdown Notes) ⏳
 Tasks that expand into full context documents.
 
 **Requirements:**
@@ -70,14 +68,14 @@ Tasks that expand into full context documents.
 
 ---
 
-### 4. Command Bar ⏳
+### 5. Command Bar ✅
 Lightning-fast creation via `Cmd/Ctrl + K`.
 
 **Requirements:**
-- [ ] Global keyboard shortcut listener
-- [ ] Fuzzy search through existing tasks
-- [ ] Natural language parsing: `/task Buy milk tomorrow`
-- [ ] Quick actions: create task, jump to date, search
+- [x] Global keyboard shortcut listener
+- [x] Fuzzy search through existing tasks
+- [x] Natural language parsing: `/task Buy milk tomorrow`
+- [x] Quick actions: create task, jump to date, search
 
 ---
 

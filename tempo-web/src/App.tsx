@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from './stores/appStore';
 import { Button } from './components/ui';
 import { MonthCalendar, DayAgenda } from './components/calendar';
+import { CommandBar } from './components/command-bar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { addMonths, subMonths, startOfMonth } from 'date-fns';
+import type { Task } from './lib/db';
 
 // =================================================================
 // TEMPO APP SHELL - Calendar First
@@ -12,7 +14,7 @@ import { addMonths, subMonths, startOfMonth } from 'date-fns';
 type ViewMode = 'calendar' | 'day';
 
 function App() {
-  const { isCommandBarOpen, toggleCommandBar } = useAppStore();
+  const { isCommandBarOpen, toggleCommandBar, closeCommandBar } = useAppStore();
 
   // Calendar state
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
@@ -44,6 +46,28 @@ function App() {
     setCurrentMonth(startOfMonth(date));
   }, []);
 
+  // Command bar handlers
+  const handleCreateTask = useCallback((_taskId: string, date: Date) => {
+    // Navigate to the day where task was created
+    setSelectedDate(date);
+    setCurrentMonth(startOfMonth(date));
+    setViewMode('day');
+  }, []);
+
+  const handleJumpToDate = useCallback((date: Date) => {
+    setSelectedDate(date);
+    setCurrentMonth(startOfMonth(date));
+    setViewMode('day');
+  }, []);
+
+  const handleSelectTask = useCallback((task: Task) => {
+    // Navigate to the task's due date
+    const date = new Date(task.dueDate);
+    setSelectedDate(date);
+    setCurrentMonth(startOfMonth(date));
+    setViewMode('day');
+  }, []);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -52,15 +76,15 @@ function App() {
         e.preventDefault();
         toggleCommandBar();
       }
-      // Escape to go back to calendar
-      if (e.key === 'Escape' && viewMode === 'day') {
+      // Escape to go back to calendar (only if command bar is closed)
+      if (e.key === 'Escape' && viewMode === 'day' && !isCommandBarOpen) {
         handleBackToCalendar();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleCommandBar, viewMode, handleBackToCalendar]);
+  }, [toggleCommandBar, viewMode, handleBackToCalendar, isCommandBarOpen]);
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary">
@@ -148,41 +172,17 @@ function App() {
         </AnimatePresence>
       </main>
 
-      {/* Command Bar Overlay */}
-      <AnimatePresence>
-        {isCommandBarOpen && (
-          <motion.div
-            className="fixed inset-0 z-[100] flex items-start justify-center pt-[20vh]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={toggleCommandBar}
-            />
-            <motion.div
-              className="relative w-full max-w-xl mx-4 glass rounded-xl p-4 shadow-2xl"
-              initial={{ opacity: 0, scale: 0.95, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            >
-              <input
-                autoFocus
-                type="text"
-                placeholder="What would you like to do?"
-                className="w-full bg-transparent border-none outline-none text-lg text-text-primary placeholder:text-text-muted"
-              />
-              <p className="mt-4 text-sm text-text-muted">
-                Try: /task Buy milk tomorrow
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Command Bar */}
+      <CommandBar
+        isOpen={isCommandBarOpen}
+        onClose={closeCommandBar}
+        onCreateTask={handleCreateTask}
+        onJumpToDate={handleJumpToDate}
+        onSelectTask={handleSelectTask}
+      />
     </div>
   );
 }
 
 export default App;
+

@@ -91,7 +91,7 @@ export const DayAgenda = memo(function DayAgenda({
             >
                 {/* Today's special gradient border */}
                 {today && (
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent-primary/10 via-transparent to-accent-secondary/10 pointer-events-none" />
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent-primary/3 via-transparent to-accent-secondary/3 pointer-events-none" />
                 )}
 
                 <div className="relative p-6">
