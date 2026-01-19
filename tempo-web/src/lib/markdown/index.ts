@@ -3,6 +3,8 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 
 // =================================================================
 // MARKDOWN PROCESSOR
@@ -12,7 +14,16 @@ const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkRehype, { allowDangerousHtml: true })
-    .use(rehypeStringify, { allowDangerousHtml: true });
+    .use(rehypeRaw)
+    .use(rehypeSanitize, {
+        ...defaultSchema,
+        tagNames: [...(defaultSchema.tagNames || []), 'input'],
+        attributes: {
+            ...defaultSchema.attributes,
+            input: ['type', 'checked', 'disabled', 'data-line', 'dataLine', 'className']
+        }
+    })
+    .use(rehypeStringify, { allowDangerousHtml: false });
 
 /**
  * Process markdown content to HTML

@@ -41,7 +41,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 
         return () => {
             checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('click', handleClick);
+                checkbox.removeEventListener('click', handleClick);
             });
         };
     }, [content, onCheckboxToggle]);
