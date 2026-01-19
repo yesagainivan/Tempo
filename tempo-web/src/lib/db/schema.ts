@@ -18,5 +18,11 @@ export const AppSchema = new Schema({
         recurrence: column.text,           // JSON string
         recurring_parent_id: column.text,
         is_recurring_instance: column.integer
+    }, {
+        indexes: {
+            due_date: ['due_date'],
+            completed_at: ['completed_at'],
+            completed: ['completed']
+        }
     })
 });

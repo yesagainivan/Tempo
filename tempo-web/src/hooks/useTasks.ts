@@ -109,7 +109,7 @@ export function useTasksForDate(date: Date): Task[] {
         );
 
         return merged.sort((a, b) => a.order - b.order);
-    }, [rangeRows, templateRows, date]);
+    }, [rangeRows, templateRows, dayStart]);
 
     return tasks;
 }
@@ -145,7 +145,7 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
             startDate,
             endDate
         );
-    }, [rangeRows, templateRows, startDate, endDate]);
+    }, [rangeRows, templateRows, startTs, endTs]);
 
     return tasks;
 }

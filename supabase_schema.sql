@@ -49,3 +49,9 @@ create policy "Users can delete their own tasks"
 -- This tells Supabase to send realtime updates for this table
 drop publication if exists powersync;
 create publication powersync for table public.tasks;
+
+-- 5. Add Indexes for Performance
+-- These match the local SQLite indexes to ensure consistent performance
+create index if not exists tasks_due_date_idx on public.tasks(due_date);
+create index if not exists tasks_completed_at_idx on public.tasks(completed_at);
+create index if not exists tasks_completed_idx on public.tasks(completed);
