@@ -86,9 +86,9 @@ export const StatsModal = memo(function StatsModal({ isOpen, onClose }: StatsMod
                                     icon={<CheckCircleIcon className="w-4 h-4 text-success" />}
                                 />
                                 <StatBox
-                                    label="This Week"
+                                    label="Weekly Rate"
                                     value={completionRate.weekly}
-                                    suffix="tasks"
+                                    suffix="%"
                                     icon={<CalendarIcon className="w-4 h-4 text-accent-primary" />}
                                 />
                             </div>

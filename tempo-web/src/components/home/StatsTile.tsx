@@ -23,8 +23,13 @@ export const StatsTile = memo(function StatsTile({ onClick }: StatsTileProps) {
                 relative
                 overflow-hidden
             "
-            whileHover={{ scale: 1.01, backgroundColor: 'rgba(255, 255, 255, 0.03)' }}
+            whileHover={{
+                scale: 1.02,
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                y: -2
+            }}
             whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onClick={onClick}
         >
             {/* Background Gradient/Glow */}
@@ -63,10 +68,10 @@ export const StatsTile = memo(function StatsTile({ onClick }: StatsTileProps) {
                 <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
                     <div>
                         <span className="text-2xl font-semibold text-text-primary block">
-                            {completionRate.weekly}
+                            {completionRate.weekly}%
                         </span>
                         <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
-                            Completed Last 7 Days
+                            Weekly Completion Rate
                         </span>
                     </div>
 
