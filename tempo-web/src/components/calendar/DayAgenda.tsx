@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, addDays, subDays } from 'date-fns';
 import { useTasksForDate } from '../../hooks/useTasks';
 import { TaskItem, InlineTaskCreator } from '../tasks';
@@ -151,20 +151,23 @@ export const DayAgenda = memo(function DayAgenda({
 
                     {/* Tasks List */}
                     <div className="space-y-2 mb-4">
-                        {tasks.map((task, index) => (
-                            <motion.div
-                                key={task.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                layout
-                                transition={{
-                                    delay: index * 0.05,
-                                    layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
-                                }}
-                            >
-                                <TaskItem task={task} />
-                            </motion.div>
-                        ))}
+                        <AnimatePresence mode="popLayout">
+                            {tasks.map((task) => (
+                                <motion.div
+                                    key={task.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                                    layout
+                                    transition={{
+                                        duration: 0.2, // Base duration for opacity/transform
+                                        layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
+                                    }}
+                                >
+                                    <TaskItem task={task} />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                     </div>
 
                     {/* Empty State */}

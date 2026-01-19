@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { useUpcomingTasks } from '../../hooks/useTasks';
 
@@ -39,55 +39,61 @@ export const UpcomingTile = memo(function UpcomingTile({ onSelectDate }: Upcomin
                 initial="hidden"
                 animate="visible"
             >
-                {upcomingGroups.slice(0, 5).map((group) => (
-                    <motion.div
-                        key={group.date.toISOString()}
-                        variants={{
-                            hidden: { opacity: 0, y: 10 },
-                            visible: { opacity: 1, y: 0 }
-                        }}
-                    >
-                        <motion.button
-                            className="w-full flex items-center justify-between p-3 rounded-xl bg-bg-tertiary/50 hover:bg-bg-tertiary transition-colors text-left"
-                            onClick={() => onSelectDate(group.date)}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
+                <AnimatePresence mode="popLayout" initial={false}>
+                    {upcomingGroups.slice(0, 5).map((group) => (
+                        <motion.div
+                            key={group.date.toISOString()}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
+                            layout
                             transition={{ duration: 0.2 }}
                         >
-                            <div className="flex items-center gap-3">
-                                {/* Date Badge */}
-                                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-bg-glass text-text-secondary">
-                                    <span className="text-sm font-medium">{format(group.date, 'd')}</span>
+                            <motion.button
+                                className="w-full flex items-center justify-between p-3 rounded-xl bg-bg-tertiary/50 hover:bg-bg-tertiary transition-colors text-left"
+                                onClick={() => onSelectDate(group.date)}
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {/* Date Badge */}
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-bg-glass text-text-secondary">
+                                        <span className="text-sm font-medium">{format(group.date, 'd')}</span>
+                                    </div>
+
+                                    {/* Day Label */}
+                                    <div>
+                                        <p className="text-sm font-medium text-text-primary">
+                                            {formatDayLabel(group.date)}
+                                        </p>
+                                        <p className="text-xs text-text-muted">
+                                            {format(group.date, 'EEEE')}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                {/* Day Label */}
-                                <div>
-                                    <p className="text-sm font-medium text-text-primary">
-                                        {formatDayLabel(group.date)}
-                                    </p>
-                                    <p className="text-xs text-text-muted">
-                                        {format(group.date, 'EEEE')}
-                                    </p>
+                                {/* Task Count */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-accent-primary">
+                                        {group.tasks.length}
+                                    </span>
+                                    <span className="text-xs text-text-muted">
+                                        {group.tasks.length === 1 ? 'task' : 'tasks'}
+                                    </span>
                                 </div>
-                            </div>
-
-                            {/* Task Count */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-accent-primary">
-                                    {group.tasks.length}
-                                </span>
-                                <span className="text-xs text-text-muted">
-                                    {group.tasks.length === 1 ? 'task' : 'tasks'}
-                                </span>
-                            </div>
-                        </motion.button>
-                    </motion.div>
-                ))}
+                            </motion.button>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
 
                 {upcomingGroups.length > 5 && (
-                    <p className="text-xs text-text-muted text-center pt-2">
+                    <motion.p
+                        className="text-xs text-text-muted text-center pt-2"
+                        layout
+                    >
                         +{upcomingGroups.length - 5} more days with tasks
-                    </p>
+                    </motion.p>
                 )}
             </motion.div>
         </div>
