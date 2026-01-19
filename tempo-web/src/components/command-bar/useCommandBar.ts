@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@powersync/react';
 import { type Task, type TaskType, saveTask } from '../../lib/db';
 import { fuzzySearch } from '../../lib/search/fuzzySearch';
-import { parseTaskInput, formatParsedDate } from '../../lib/nlp/dateParser';
+import { parseTaskInput, formatParsedDate, type ParsedRecurrence } from '../../lib/nlp/dateParser';
+import { formatRecurrence } from '../../lib/db/recurrence';
 
 // =================================================================
 // TYPES
@@ -15,7 +16,7 @@ export interface CommandState {
     parsedTitle?: string;
     parsedDate?: Date;
     parsedDateDisplay?: string;
-    parsedRecurrence?: any;
+    parsedRecurrence?: ParsedRecurrence | null;
 }
 
 export interface SearchResult {
@@ -78,9 +79,87 @@ export function useCommandBar({
     const commandState = useMemo<CommandState>(() => {
         const trimmed = input.trim();
 
-        if (!trimmed) return { mode: 'search' };
-        if (trimmed === '/help') return { mode: 'help' };
-        if (trimmed === '/today') {
+        // /task command - create new task
+        // Matches "/task" or "/task something"
+        const taskMatch = trimmed.match(/^\/task(?:\s+(.*)|$)/i);
+        if (taskMatch) {
+            const remainder = taskMatch[1] || ''; // Capture group 1 is the rest of string
+
+            // Check for > delimiter (explicit title/date separation)
+            const delimiterIndex = remainder.indexOf('>');
+
+            let parsedTitle: string;
+            let parsedDate: Date | undefined;
+            let parsedDateDisplay: string | undefined;
+            let parsedRecurrence: any;
+
+            if (delimiterIndex !== -1) {
+                // Explicit delimiter: "Buy milk > tomorrow"
+                parsedTitle = remainder.slice(0, delimiterIndex).trim();
+                const dateStr = remainder.slice(delimiterIndex + 1).trim();
+                const parsed = parseTaskInput(dateStr);
+                parsedDate = parsed.parsedDate?.date;
+                parsedDateDisplay = parsed.parsedDate
+                    ? formatParsedDate(parsed.parsedDate)
+                    : undefined;
+
+                // Convert ParsedRecurrence to Recurrence
+                if (parsed.parsedRecurrence) {
+                    parsedRecurrence = {
+                        pattern: parsed.parsedRecurrence.pattern,
+                        interval: parsed.parsedRecurrence.interval,
+                        daysOfWeek: parsed.parsedRecurrence.daysOfWeek,
+                    };
+                }
+            } else {
+                // No delimiter: try smart parsing from end
+                const parsed = parseTaskInput(remainder);
+                parsedTitle = parsed.title || remainder;
+                parsedDate = parsed.parsedDate?.date;
+                parsedDateDisplay = parsed.parsedDate
+                    ? formatParsedDate(parsed.parsedDate)
+                    : undefined;
+
+                if (parsed.parsedRecurrence) {
+                    parsedRecurrence = {
+                        pattern: parsed.parsedRecurrence.pattern,
+                        interval: parsed.parsedRecurrence.interval,
+                        daysOfWeek: parsed.parsedRecurrence.daysOfWeek,
+                    };
+                }
+            }
+
+            // Build display with recurrence
+            let displayParts: string[] = [];
+            if (parsedDateDisplay) displayParts.push(parsedDateDisplay);
+            if (parsedRecurrence) displayParts.push(formatRecurrence(parsedRecurrence));
+
+            return {
+                mode: 'create',
+                parsedTitle,
+                parsedDate,
+                parsedDateDisplay: displayParts.length > 0 ? displayParts.join(' • ') : undefined,
+                parsedRecurrence
+            };
+        }
+
+        // /go command - jump to date
+        const goMatch = trimmed.match(/^\/go(?:\s+(.*)|$)/i);
+        if (goMatch) {
+            const remainder = goMatch[1] || '';
+            const parsed = parseTaskInput(remainder);
+
+            return {
+                mode: 'goto',
+                parsedDate: parsed.parsedDate?.date,
+                parsedDateDisplay: parsed.parsedDate
+                    ? formatParsedDate(parsed.parsedDate)
+                    : undefined,
+            };
+        }
+
+        // /today shortcut
+        if (trimmed.toLowerCase() === '/today') {
             return {
                 mode: 'goto',
                 parsedDate: new Date(),
@@ -88,53 +167,25 @@ export function useCommandBar({
             };
         }
 
-        // Explicit commands
-        if (trimmed.startsWith('/go ')) {
-            const dateStr = trimmed.slice(4);
-            const parsed = parseTaskInput(dateStr); // Just use parser for date
-            if (parsed.parsedDate) {
-                return {
-                    mode: 'goto',
-                    parsedDate: parsed.parsedDate.date,
-                    parsedDateDisplay: formatParsedDate(parsed.parsedDate)
-                };
-            }
-            return { mode: 'goto' };
+        // /help or ?
+        if (trimmed === '/help' || trimmed === '?') {
+            return { mode: 'help' };
         }
 
-        if (trimmed.startsWith('/task ')) {
-            const taskStr = trimmed.slice(6);
-            const parsed = parseTaskInput(taskStr);
-            return {
-                mode: 'create',
-                parsedTitle: parsed.title,
-                parsedDate: parsed.parsedDate?.date,
-                parsedDateDisplay: parsed.parsedDate ? formatParsedDate(parsed.parsedDate) : undefined,
-                parsedRecurrence: parsed.parsedRecurrence
-            };
-        }
-
-        // Implicit parsing (Search vs Create logic)
-        // If input contains ">", treat as quick create intent?
-        // Or if simple search returns no results, maybe suggest create?
-        // For now, stick to Search as default, but verify if input looks like a command.
-
+        // Default: search mode
         return { mode: 'search' };
     }, [input]);
-
 
     // 3. Search Results
     const searchResults = useMemo<SearchResult[]>(() => {
         if (commandState.mode !== 'search' || !input) return [];
 
-        const matches = fuzzySearch(input, tasks, (t) => t.title, 20);
+        const matches = fuzzySearch(input, tasks, (t) => t.title, 8); // Updated threshold from 20 to 8 per archive
 
         return matches.map(m => ({
             task: m.item,
             score: m.match.score,
-            highlights: [{ text: m.item.title, highlighted: false }] // Simplified, real highlighting needs utility
-            // Real highlighting logic:
-            // highlights: highlightMatches(m.item.title, m.match.indices)
+            highlights: [{ text: m.item.title, highlighted: false }]
         }));
     }, [input, tasks, commandState.mode]);
 
@@ -160,8 +211,6 @@ export function useCommandBar({
             createdAt: Date.now(),
             updatedAt: Date.now(),
             order: Date.now(),
-            // Recurrence not fully handled in type yet for passing to saveTask safely if complex
-            // But basic structure is:
             recurrence: commandState.parsedRecurrence ? {
                 pattern: commandState.parsedRecurrence.pattern,
                 interval: commandState.parsedRecurrence.interval,

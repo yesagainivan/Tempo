@@ -12,8 +12,11 @@ interface SettingsModalProps {
     onOpenAuth: () => void;
 }
 
-import { GithubIcon, LogOutIcon } from '../icons';
+import { GithubIcon, LogOutIcon, TrashIcon } from '../icons';
 import { useAuthStore } from '../../stores/authStore';
+import { db } from '../../lib/db';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { useState } from 'react';
 
 const ACCENT_COLORS: { value: string; label: string }[] = [
     { value: '#7c5cff', label: 'Violet' },
@@ -32,8 +35,24 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: React.ElementType 
 
 export function SettingsModal({ isOpen, onClose, onOpenAuth }: SettingsModalProps) {
     const { theme, accentColor, setTheme, setAccentColor } = useThemeStore();
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const { signOut } = useAuthStore();
 
-    return createPortal(
+    const handleReset = async () => {
+        try {
+            await signOut();
+            await db.disconnectAndClear();
+            localStorage.clear();
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to reset app:', error);
+            // Fallback clear
+            localStorage.clear();
+            window.location.reload();
+        }
+    };
+
+    const portalContent = createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -141,6 +160,27 @@ export function SettingsModal({ isOpen, onClose, onOpenAuth }: SettingsModalProp
                                     ))}
                                 </div>
                             </section>
+
+                            <hr className="border-border-subtle" />
+
+                            {/* Danger Zone */}
+                            <section className="space-y-4">
+                                <div>
+                                    <h3 className="text-base font-medium text-text-danger mb-1">Danger Zone</h3>
+                                    <p className="text-sm text-text-secondary">Irreversible actions for your specialized data.</p>
+                                </div>
+
+                                <div>
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setIsResetDialogOpen(true)}
+                                        className="text-text-danger hover:bg-bg-danger/10 w-full justify-start border border-border-danger/30"
+                                    >
+                                        <TrashIcon className="w-4 h-4 mr-2" />
+                                        Factory Reset Tempo
+                                    </Button>
+                                </div>
+                            </section>
                         </div>
 
                         {/* Footer */}
@@ -156,6 +196,22 @@ export function SettingsModal({ isOpen, onClose, onOpenAuth }: SettingsModalProp
             )}
         </AnimatePresence>,
         document.body
+    );
+
+    return (
+        <>
+            {portalContent}
+
+            <ConfirmDialog
+                isOpen={isResetDialogOpen}
+                onClose={() => setIsResetDialogOpen(false)}
+                onConfirm={handleReset}
+                title="Factory Reset Tempo?"
+                description="This will delete your local database, sign you out, and reset all settings (theme, etc). This action cannot be undone."
+                confirmText="Reset Everything"
+                variant="danger"
+            />
+        </>
     );
 }
 
