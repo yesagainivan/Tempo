@@ -26,50 +26,62 @@ export const UpcomingTile = memo(function UpcomingTile({ onSelectDate }: Upcomin
     }
 
     return (
-        <div className="glass rounded-2xl p-4 lg:p-5">
+        <div className="glass rounded-2xl p-4 lg:p-5 overflow-hidden">
             {/* Header */}
             <h3 className="text-base font-semibold text-text-primary mb-4">Upcoming</h3>
 
             {/* Day List */}
-            <div className="space-y-2">
-                {upcomingGroups.slice(0, 5).map((group, index) => (
-                    <motion.button
+            <motion.div
+                className="space-y-2"
+                variants={{
+                    visible: { transition: { staggerChildren: 0.05 } }
+                }}
+                initial="hidden"
+                animate="visible"
+            >
+                {upcomingGroups.slice(0, 5).map((group) => (
+                    <motion.div
                         key={group.date.toISOString()}
-                        className="w-full flex items-center justify-between p-3 rounded-xl bg-bg-tertiary/50 hover:bg-bg-tertiary transition-colors text-left"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        onClick={() => onSelectDate(group.date)}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
+                        variants={{
+                            hidden: { opacity: 0, y: 10 },
+                            visible: { opacity: 1, y: 0 }
+                        }}
                     >
-                        <div className="flex items-center gap-3">
-                            {/* Date Badge */}
-                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-bg-glass text-text-secondary">
-                                <span className="text-sm font-medium">{format(group.date, 'd')}</span>
+                        <motion.button
+                            className="w-full flex items-center justify-between p-3 rounded-xl bg-bg-tertiary/50 hover:bg-bg-tertiary transition-colors text-left"
+                            onClick={() => onSelectDate(group.date)}
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <div className="flex items-center gap-3">
+                                {/* Date Badge */}
+                                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-bg-glass text-text-secondary">
+                                    <span className="text-sm font-medium">{format(group.date, 'd')}</span>
+                                </div>
+
+                                {/* Day Label */}
+                                <div>
+                                    <p className="text-sm font-medium text-text-primary">
+                                        {formatDayLabel(group.date)}
+                                    </p>
+                                    <p className="text-xs text-text-muted">
+                                        {format(group.date, 'EEEE')}
+                                    </p>
+                                </div>
                             </div>
 
-                            {/* Day Label */}
-                            <div>
-                                <p className="text-sm font-medium text-text-primary">
-                                    {formatDayLabel(group.date)}
-                                </p>
-                                <p className="text-xs text-text-muted">
-                                    {format(group.date, 'EEEE')}
-                                </p>
+                            {/* Task Count */}
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-accent-primary">
+                                    {group.tasks.length}
+                                </span>
+                                <span className="text-xs text-text-muted">
+                                    {group.tasks.length === 1 ? 'task' : 'tasks'}
+                                </span>
                             </div>
-                        </div>
-
-                        {/* Task Count */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-accent-primary">
-                                {group.tasks.length}
-                            </span>
-                            <span className="text-xs text-text-muted">
-                                {group.tasks.length === 1 ? 'task' : 'tasks'}
-                            </span>
-                        </div>
-                    </motion.button>
+                        </motion.button>
+                    </motion.div>
                 ))}
 
                 {upcomingGroups.length > 5 && (
@@ -77,7 +89,7 @@ export const UpcomingTile = memo(function UpcomingTile({ onSelectDate }: Upcomin
                         +{upcomingGroups.length - 5} more days with tasks
                     </p>
                 )}
-            </div>
+            </motion.div>
         </div>
     );
 });

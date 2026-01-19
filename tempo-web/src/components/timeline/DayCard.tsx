@@ -141,19 +141,28 @@ export const DayCard = memo(function DayCard({ date }: DayCardProps) {
 
                     {/* Tasks List */}
                     <AnimatePresence mode="popLayout">
-                        <div className="space-y-2">
-                            {tasks.map((task, index) => (
+                        <motion.div
+                            className="space-y-2"
+                            variants={{
+                                visible: { transition: { staggerChildren: 0.05 } }
+                            }}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            {tasks.map((task) => (
                                 <motion.div
                                     key={task.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 20 }}
-                                    transition={{ delay: index * 0.05 }}
+                                    variants={{
+                                        hidden: { opacity: 0, x: -20 },
+                                        visible: { opacity: 1, x: 0 },
+                                        exit: { opacity: 0, x: 20 }
+                                    }}
+                                    layout
                                 >
                                     <TaskItem task={task} />
                                 </motion.div>
                             ))}
-                        </div>
+                        </motion.div>
                     </AnimatePresence>
 
                     {/* Add Task Section */}

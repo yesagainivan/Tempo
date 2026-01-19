@@ -62,14 +62,23 @@ export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) 
                 {/* Pending Tasks */}
                 <AnimatePresence mode="popLayout">
                     {pendingTasks.length > 0 && (
-                        <div className="space-y-2 mb-4">
-                            {pendingTasks.slice(0, 5).map((task, index) => (
+                        <motion.div
+                            className="space-y-2 mb-4"
+                            variants={{
+                                visible: { transition: { staggerChildren: 0.05 } }
+                            }}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            {pendingTasks.slice(0, 5).map((task) => (
                                 <motion.div
                                     key={task.id}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 10 }}
-                                    transition={{ delay: index * 0.05 }}
+                                    variants={{
+                                        hidden: { opacity: 0, x: -10 },
+                                        visible: { opacity: 1, x: 0 },
+                                        exit: { opacity: 0, x: 10 }
+                                    }}
+                                    layout
                                 >
                                     <TaskItem task={task} />
                                 </motion.div>
@@ -79,7 +88,7 @@ export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) 
                                     +{pendingTasks.length - 5} more tasks
                                 </p>
                             )}
-                        </div>
+                        </motion.div>
                     )}
                 </AnimatePresence>
 

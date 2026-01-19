@@ -73,15 +73,14 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
         p-3 sm:p-4 rounded-xl
         bg-bg-tertiary/50
         border border-transparent
-        transition-all duration-200
+        transition-all duration-200 ease-out
         ${task.completed ? 'opacity-50' : ''}
-        ${isExpanded ? 'bg-bg-tertiary border-border-subtle' : 'hover:bg-bg-tertiary hover:border-border-subtle cursor-pointer'}
+        ${isExpanded
+                    ? 'bg-bg-tertiary border-border-subtle'
+                    : 'hover:bg-bg-tertiary hover:border-border-subtle hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
+                }
       `}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: task.completed ? 0.5 : 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            whileHover={isExpanded ? undefined : { scale: 1.01 }}
-            transition={{ duration: 0.15 }}
+            animate={{ opacity: task.completed ? 0.5 : 1 }}
         >
             {/* Checkbox */}
             <div className="pt-0.5 flex-shrink-0">

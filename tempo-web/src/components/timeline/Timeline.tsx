@@ -117,29 +117,32 @@ export function Timeline() {
             </div>
 
             {/* Floating "Today" Button */}
-            <motion.button
-                onClick={scrollToToday}
-                className="
-          fixed bottom-8 right-8 z-50
-          px-5 py-3
-          bg-gradient-to-r from-accent-primary to-accent-secondary
-          text-white font-medium
-          rounded-full
-          shadow-xl shadow-accent-primary/25
-          hover:shadow-2xl hover:shadow-accent-primary/40
-          transition-shadow duration-300
-        "
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+            <motion.div
+                className="fixed bottom-8 right-8 z-50"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
             >
-                <span className="flex items-center gap-2">
-                    <span>⬇</span>
-                    <span>Today</span>
-                </span>
-            </motion.button>
+                <motion.button
+                    onClick={scrollToToday}
+                    className="
+              px-5 py-3
+              bg-gradient-to-r from-accent-primary to-accent-secondary
+              text-white font-medium
+              rounded-full
+              shadow-xl shadow-accent-primary/25
+              hover:shadow-2xl hover:shadow-accent-primary/40
+              transition-shadow duration-300
+            "
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    <span className="flex items-center gap-2">
+                        <span>⬇</span>
+                        <span>Today</span>
+                    </span>
+                </motion.button>
+            </motion.div>
 
             {/* Timeline Progress Rail */}
             <div className="fixed right-3 top-1/2 -translate-y-1/2 z-40">
