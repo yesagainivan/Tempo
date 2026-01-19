@@ -13,11 +13,10 @@ export const StatsTile = memo(function StatsTile({ onClick }: StatsTileProps) {
     return (
         <motion.div
             className="
+                glass
                 h-full w-full
                 p-5 sm:p-6
-                bg-bg-secondary/40 backdrop-blur-md
-                border border-white/5
-                rounded-3xl
+                rounded-2xl
                 cursor-pointer
                 group
                 relative
@@ -25,7 +24,7 @@ export const StatsTile = memo(function StatsTile({ onClick }: StatsTileProps) {
             "
             whileHover={{
                 scale: 1.02,
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                backgroundColor: 'var(--color-bg-tertiary)', // Use theme token for hover
                 y: -2
             }}
             whileTap={{ scale: 0.98 }}

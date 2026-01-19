@@ -27,7 +27,12 @@ export const StatsModal = memo(function StatsModal({ isOpen, onClose }: StatsMod
     return createPortal(
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                >
                     {/* Backdrop */}
                     <motion.div
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -116,7 +121,7 @@ export const StatsModal = memo(function StatsModal({ isOpen, onClose }: StatsMod
 
                         </div>
                     </motion.div>
-                </div>
+                </motion.div>
             )}
         </AnimatePresence>,
         document.body
