@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, useEffect } from 'react';
 import { eachDayOfInterval, format, subDays, startOfWeek, endOfWeek, getDay } from 'date-fns';
-import { motion } from 'framer-motion';
+
 
 interface HeatmapProps {
     data: Map<string, number>;
@@ -102,17 +102,19 @@ export const Heatmap = memo(function Heatmap({ data }: HeatmapProps) {
                             const count = data.get(dateStr) || 0;
 
                             return (
-                                <motion.div
+                                <div
                                     key={dateStr}
                                     title={`${count} tasks on ${format(date, 'MMM d, yyyy')}`}
                                     className={`
                                         w-2.5 h-2.5 rounded-sm 
                                         transition-colors duration-200
                                         ${getColor(count)}
+                                        animate-pop-in
+                                        opacity-0
                                     `}
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: Math.random() * 0.5 }}
+                                    style={{
+                                        animationDelay: `${Math.random() * 0.5}s`
+                                    }}
                                 />
                             );
                         })}
