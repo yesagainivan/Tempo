@@ -193,19 +193,87 @@ export function generateRecurringInstances(
     if (!template.recurrence) return [];
 
     const instances: Task[] = [];
+    const { pattern, interval = 1, daysOfWeek, endDate: recurrenceEndDate } = template.recurrence;
+
+    // Normalize dates
     const start = startOfDay(rangeStart);
     const end = startOfDay(rangeEnd);
+    const templateStart = startOfDay(new Date(template.dueDate));
 
-    // Iterate through each day in range
-    let current = new Date(start);
-    while (!isAfter(current, end)) {
-        if (shouldOccurOn(template, current)) {
-            // Don't regenerate instance for the original date
-            if (!isSameDay(current, new Date(template.dueDate))) {
-                instances.push(createVirtualInstance(template, current));
+    // Effective end date (earlier of range end or recurrence end)
+    let effectiveEnd = end;
+    if (recurrenceEndDate) {
+        const recEnd = startOfDay(new Date(recurrenceEndDate));
+        if (isBefore(recEnd, effectiveEnd)) {
+            effectiveEnd = recEnd;
+        }
+    }
+
+    // Performance Optimization:
+    // Jump directly to the first possible occurrence near rangeStart, instead of iterating from templateStart.
+    // However, for complex patterns (e.g. weekly with specific days), reliable jumping is tricky.
+    // Given the typical range (42 days for calendar) vs recurrence duration (potentially years),
+    // we should iterate efficiently.
+
+    // 1. If strict daily/weekly/monthly/yearly, we can calculate jumps.
+
+    let current = new Date(templateStart);
+
+    // Fast-forward to rangeStart if needed
+    if (isBefore(current, start)) {
+        if (pattern === 'daily') {
+            const diffDays = Math.floor((start.getTime() - current.getTime()) / (1000 * 60 * 60 * 24));
+            // Jump to just before or at start
+            const jumps = Math.floor(diffDays / interval);
+            if (jumps > 0) {
+                current = addDays(current, jumps * interval);
+            }
+        } else if (pattern === 'weekly' && (!daysOfWeek || daysOfWeek.length === 0)) {
+            const diffWeeks = Math.floor((start.getTime() - current.getTime()) / (1000 * 60 * 60 * 24 * 7));
+            const jumps = Math.floor(diffWeeks / interval);
+            if (jumps > 0) {
+                current = addWeeks(current, jumps * interval);
+            }
+        } else if (pattern === 'monthly') {
+            // Rough jump for months
+            const diffMonths = (start.getFullYear() - current.getFullYear()) * 12 + (start.getMonth() - current.getMonth());
+            const jumps = Math.floor(diffMonths / interval);
+            if (jumps > 0) {
+                current = addMonths(current, jumps * interval);
+            }
+        } else if (pattern === 'yearly') {
+            const diffYears = start.getFullYear() - current.getFullYear();
+            const jumps = Math.floor(diffYears / interval);
+            if (jumps > 0) {
+                current = addYears(current, jumps * interval);
             }
         }
-        current = addDays(current, 1);
+    }
+
+    // Iteration Loop: Now we are close to start, iterate forward until we pass end
+    while (!isAfter(current, effectiveEnd)) {
+        // Only add if within range [start, effectiveEnd]
+        if (!isBefore(current, start)) {
+            if (shouldOccurOn(template, current)) {
+                // Don't regenerate instance for the original date
+                if (!isSameDay(current, templateStart)) {
+                    instances.push(createVirtualInstance(template, current));
+                }
+            }
+        }
+
+        // Efficient Next Step
+        // Use getNextOccurrence to jump properly instead of +1 day loop
+        // BUT getNextOccurrence logic needs to be robust. 
+        // Let's rely on getNextOccurrence which we already have, it defines the jump logic.
+        const next = getNextOccurrence(template.recurrence, current);
+
+        // Safety break to prevent infinite loops if next <= current
+        if (!isAfter(next, current)) {
+            current = addDays(current, 1); // Fallback
+        } else {
+            current = next;
+        }
     }
 
     return instances;

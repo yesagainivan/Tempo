@@ -3,4 +3,3 @@ export { Input } from './Input';
 export { Checkbox } from './Checkbox';
 export { ConfirmDialog } from './ConfirmDialog';
 export { TaskEditModal } from './TaskEditModal';
-export { Deferred } from './Deferred';

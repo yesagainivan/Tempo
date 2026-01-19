@@ -22,7 +22,10 @@ export const AppSchema = new Schema({
         indexes: {
             due_date: ['due_date'],
             completed_at: ['completed_at'],
-            completed: ['completed']
+            completed: ['completed'],
+            // Performance: Index recurrence to prevent full table scans on Home tab
+            recurrence: ['recurrence'],
+            is_recurring_instance: ['is_recurring_instance']
         }
     })
 });

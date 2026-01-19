@@ -94,22 +94,36 @@ export function useTasksForDate(date: Date): Task[] {
     // Since persisted instances are in 'tasks', we are good.
 
     const tasks = useMemo(() => {
+        // Optimization: Quick return if no data
+        if (rangeRows.length === 0 && templateRows.length === 0) return [];
+
         const rangeTasks = rangeRows.map(rowToTask);
         const templates = templateRows.map(rowToTask);
 
         // Filter templates: exclude generated instances from templates list if any leak in
-        const cleanTemplates = templates.filter(t => !t.isRecurringInstance);
+        // AND pre-filter templates that definitely don't overlap with the day
+        const dayStartInstance = new Date(dayStart);
+        const dayEndInstance = new Date(dayEnd);
+
+        const cleanTemplates = templates.filter(t => {
+            if (t.isRecurringInstance) return false;
+            // Creation date check (start date)
+            if (t.dueDate > dayEnd) return false;
+            // Recurrence end date check
+            if (t.recurrence?.endDate && t.recurrence.endDate < dayStart) return false;
+            return true;
+        });
 
         const merged = mergeTasksWithRecurrence(
             rangeTasks,
             cleanTemplates,
-            new Set(), // persisted instances are already in rangeTasks, so we don't need extra set check if logic holds
-            startOfDay(date),
-            endOfDay(date)
+            new Set(), // Persisted instances already in rangeTasks
+            dayStartInstance,
+            dayEndInstance
         );
 
         return merged.sort((a, b) => a.order - b.order);
-    }, [rangeRows, templateRows, dayStart]);
+    }, [rangeRows, templateRows, dayStart, dayEnd]);
 
     return tasks;
 }
@@ -135,15 +149,30 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
     });
 
     const tasks = useMemo(() => {
+        // Optimization: Quick return
+        if (rangeRows.length === 0 && templateRows.length === 0) return [];
+
         const rangeTasks = rangeRows.map(rowToTask);
-        const templates = templateRows.map(rowToTask).filter(t => !t.isRecurringInstance);
+
+        // Date objects for range
+        const rangeStartDate = new Date(startTs);
+        const rangeEndDate = new Date(endTs);
+
+        const templates = templateRows.map(rowToTask).filter(t => {
+            if (t.isRecurringInstance) return false;
+            // Creation date check
+            if (t.dueDate > endTs) return false;
+            // Recurrence end date check
+            if (t.recurrence?.endDate && t.recurrence.endDate < startTs) return false;
+            return true;
+        });
 
         return mergeTasksWithRecurrence(
             rangeTasks,
             templates,
             new Set(),
-            startDate,
-            endDate
+            rangeStartDate,
+            rangeEndDate
         );
     }, [rangeRows, templateRows, startTs, endTs]);
 

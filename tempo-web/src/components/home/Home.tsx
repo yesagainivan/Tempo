@@ -7,8 +7,6 @@ import { UpcomingTile } from './UpcomingTile';
 import { StatsTile } from './StatsTile';
 import { StatsModal } from '../stats';
 
-import { Deferred } from '../ui';
-
 // =================================================================
 // HOME DASHBOARD - Bento Grid Layout
 // =================================================================
@@ -53,15 +51,13 @@ export const Home = memo(function Home({ onSelectDate }: HomeProps) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 }}
                     >
-                        <Deferred delay={0} fallback={<div className="glass rounded-2xl w-full h-[400px]" />}>
-                            <CalendarTile
-                                currentMonth={currentMonth}
-                                selectedDate={selectedDate}
-                                onSelectDate={handleSelectDate}
-                                onPrevMonth={goToPrevMonth}
-                                onNextMonth={goToNextMonth}
-                            />
-                        </Deferred>
+                        <CalendarTile
+                            currentMonth={currentMonth}
+                            selectedDate={selectedDate}
+                            onSelectDate={handleSelectDate}
+                            onPrevMonth={goToPrevMonth}
+                            onNextMonth={goToNextMonth}
+                        />
                     </motion.div>
 
                     <motion.div
@@ -70,9 +66,7 @@ export const Home = memo(function Home({ onSelectDate }: HomeProps) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.15 }}
                     >
-                        <Deferred delay={50} fallback={<div className="glass rounded-2xl w-full h-[150px]" />}>
-                            <StatsTile onClick={() => setIsStatsOpen(true)} />
-                        </Deferred>
+                        <StatsTile onClick={() => setIsStatsOpen(true)} />
                     </motion.div>
                 </div>
 
@@ -84,9 +78,7 @@ export const Home = memo(function Home({ onSelectDate }: HomeProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                     >
-                        <Deferred delay={100} fallback={<div className="glass rounded-2xl w-full h-[300px]" />}>
-                            <TodayTile onViewDay={() => handleSelectDate(new Date())} />
-                        </Deferred>
+                        <TodayTile onViewDay={() => handleSelectDate(new Date())} />
                     </motion.div>
 
                     <motion.div
@@ -94,10 +86,7 @@ export const Home = memo(function Home({ onSelectDate }: HomeProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.25 }}
                     >
-                        {/* Note: UpcomingTile handles its own empty state sizing well, but fallback prevents jump */}
-                        <Deferred delay={150} fallback={<div className="glass rounded-2xl w-full h-[300px]" />}>
-                            <UpcomingTile onSelectDate={handleSelectDate} />
-                        </Deferred>
+                        <UpcomingTile onSelectDate={handleSelectDate} />
                     </motion.div>
                 </div>
 
