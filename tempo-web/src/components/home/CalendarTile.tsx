@@ -10,9 +10,11 @@ import {
     isSameMonth,
     isToday,
     isSameDay,
+    startOfDay,
 } from 'date-fns';
-import { useTaskCountForDate } from '../../hooks/useTasks';
+import { useTasksInRange } from '../../hooks/useTasks';
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
+import type { Task } from '../../lib/db';
 
 // =================================================================
 // CALENDAR TILE - Compact Calendar for Dashboard
@@ -35,14 +37,37 @@ export const CalendarTile = memo(function CalendarTile({
     onPrevMonth,
     onNextMonth,
 }: CalendarTileProps) {
-    const calendarDays = useMemo(() => {
+    // 1. Calculate Grid Range
+    const { calendarDays, startRange, endRange } = useMemo(() => {
         const monthStart = startOfMonth(currentMonth);
         const monthEnd = endOfMonth(currentMonth);
         const calendarStart = startOfWeek(monthStart);
         const calendarEnd = endOfWeek(monthEnd);
 
-        return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+        return {
+            calendarDays: eachDayOfInterval({ start: calendarStart, end: calendarEnd }),
+            startRange: calendarStart,
+            endRange: calendarEnd
+        };
     }, [currentMonth]);
+
+    // 2. Fetch Tasks efficiently for the whole range
+    const tasks = useTasksInRange(startRange, endRange);
+
+    // 3. Group tasks by day [timestamp -> tasks[]]
+    const tasksByDay = useMemo(() => {
+        const map = new Map<number, Task[]>();
+        tasks.forEach(task => {
+            // We use due date to place it on the calendar
+            // Use startOfDay to normalize
+            const dayTs = startOfDay(new Date(task.dueDate)).getTime();
+            if (!map.has(dayTs)) {
+                map.set(dayTs, []);
+            }
+            map.get(dayTs)?.push(task);
+        });
+        return map;
+    }, [tasks]);
 
     return (
         <div className="glass rounded-2xl p-4 lg:p-5 h-full">
@@ -90,16 +115,22 @@ export const CalendarTile = memo(function CalendarTile({
 
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((day) => (
-                    <CompactCalendarDay
-                        key={day.toISOString()}
-                        date={day}
-                        isCurrentMonth={isSameMonth(day, currentMonth)}
-                        isSelected={isSameDay(day, selectedDate)}
-                        isToday={isToday(day)}
-                        onClick={() => onSelectDate(day)}
-                    />
-                ))}
+                {calendarDays.map((day) => {
+                    const dayTs = startOfDay(day).getTime();
+                    const dayTasks = tasksByDay.get(dayTs) || [];
+
+                    return (
+                        <CompactCalendarDay
+                            key={day.toISOString()}
+                            date={day}
+                            tasks={dayTasks}
+                            isCurrentMonth={isSameMonth(day, currentMonth)}
+                            isSelected={isSameDay(day, selectedDate)}
+                            isToday={isToday(day)}
+                            onClick={() => onSelectDate(day)}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
@@ -111,6 +142,7 @@ export const CalendarTile = memo(function CalendarTile({
 
 interface CompactCalendarDayProps {
     date: Date;
+    tasks: Task[];
     isCurrentMonth: boolean;
     isSelected: boolean;
     isToday: boolean;
@@ -119,12 +151,19 @@ interface CompactCalendarDayProps {
 
 const CompactCalendarDay = memo(function CompactCalendarDay({
     date,
+    tasks,
     isCurrentMonth,
     isSelected,
     isToday,
     onClick,
 }: CompactCalendarDayProps) {
-    const taskCount = useTaskCountForDate(date);
+    // Limit to 12 tasks for the "clock" visualization
+    const displayTasks = useMemo(() => {
+        // Sort: Completed last? Or maybe just consistent order
+        // Let's keep them sorted by creation or order to keep dots stable
+        // The parent usually returns them sorted by order.
+        return tasks.slice(0, 12);
+    }, [tasks]);
 
     return (
         <motion.button
@@ -146,18 +185,67 @@ const CompactCalendarDay = memo(function CompactCalendarDay({
         >
             {/* Day Number */}
             <span className={`
-        text-xs font-medium
+        text-xs font-medium z-10
         ${isSelected ? 'text-white' : ''}
       `}>
                 {format(date, 'd')}
             </span>
 
-            {/* Task Indicator */}
-            {taskCount > 0 && (
-                <div className={`
-          absolute bottom-0.5 w-1 h-1 rounded-full
-          ${isSelected ? 'bg-white/70' : 'bg-accent-primary'}
-        `} />
+            {/* Task Indicators (Clock) */}
+            {displayTasks.length > 0 && (
+                <div className="absolute inset-0 pointer-events-none">
+                    {displayTasks.map((task, i) => {
+                        const count = displayTasks.length;
+                        // Calculate position on a circle
+                        // Start from top (expiry usually 12 o'clock)
+                        // Angle: -90 deg is top.
+                        // We divide 360 by MAX(12) or by count? 
+                        // If we want them to look like a clock, we should probably stick to 12 slots fixed positions?
+                        // Or distribute them evenly? Even distribution looks cleaner for small numbers.
+                        // Let's do even distribution.
+
+                        const angleStep = 360 / count;
+                        const angle = i * angleStep - 90; // -90 to start at top
+
+                        // Radius: we need to place them around the center number.
+                        // The button is roughly 40x40 to 50x50 depending on screen. 
+                        // Let's use % to be responsive.
+                        // Center is 50%, 50%. Radius should be ~35%.
+                        const radius = 32; // percent
+
+                        // Convert polar to cartesian
+                        const radian = (angle * Math.PI) / 180;
+                        const x = 50 + radius * Math.cos(radian);
+                        const y = 50 + radius * Math.sin(radian);
+
+                        return (
+                            <motion.div
+                                key={task.id}
+                                className={`
+                                    absolute w-1 h-1 rounded-full
+                                    transition-colors duration-300
+                                    ${task.completed
+                                        ? (isSelected ? 'bg-white/80' : 'bg-success')
+                                        : (isSelected ? 'bg-white/40' : 'bg-text-muted')
+                                    }
+                                `}
+                                style={{
+                                    left: `${x}%`,
+                                    top: `${y}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                }}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 300,
+                                    damping: 20,
+                                    delay: i * 0.02 // Stagger
+                                }}
+                            />
+                        );
+                    })}
+                </div>
             )}
         </motion.button>
     );
