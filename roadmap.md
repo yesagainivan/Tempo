@@ -189,6 +189,8 @@ Remaining Work
  End date / occurrence limit in RecurrencePicker
  Skip instance functionality
 
+assess what to do with `{/* Today accent line */}`
+
 **Schema:**
 ```typescript
 recurrence?: {

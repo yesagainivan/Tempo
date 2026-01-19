@@ -83,15 +83,16 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
             animate={{ opacity: task.completed ? 0.5 : 1 }}
         >
             {/* Checkbox */}
-            <div className="pt-0.5 flex-shrink-0">
+            <motion.div layout="position" className="pt-0.5 flex-shrink-0">
                 <Checkbox
                     checked={task.completed}
                     onCheckedChange={handleToggle}
                 />
-            </div>
+            </motion.div>
 
             {/* Task Content */}
-            <div
+            <motion.div
+                layout="position"
                 className="flex-1 min-w-0"
                 onClick={handleClick}
             >
@@ -154,10 +155,12 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                         />
                     )}
                 </AnimatePresence>
-            </div>
+            </motion.div>
 
             {/* Action Buttons - always visible when expanded, hover otherwise */}
-            <div className={`
+            <motion.div
+                layout="position"
+                className={`
                 flex items-center gap-1
                 transition-opacity duration-200
                 ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
@@ -210,7 +213,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 >
                     <TrashIcon className="w-4 h-4" />
                 </button>
-            </div>
+            </motion.div>
 
             {/* Edit Modal */}
             <TaskEditModal

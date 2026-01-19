@@ -79,6 +79,9 @@ export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) 
                                         exit: { opacity: 0, x: 10 }
                                     }}
                                     layout
+                                    transition={{
+                                        layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
+                                    }}
                                 >
                                     <TaskItem task={task} />
                                 </motion.div>

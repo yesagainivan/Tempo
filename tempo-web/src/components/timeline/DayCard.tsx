@@ -158,6 +158,9 @@ export const DayCard = memo(function DayCard({ date }: DayCardProps) {
                                         exit: { opacity: 0, x: 20 }
                                     }}
                                     layout
+                                    transition={{
+                                        layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
+                                    }}
                                 >
                                     <TaskItem task={task} />
                                 </motion.div>

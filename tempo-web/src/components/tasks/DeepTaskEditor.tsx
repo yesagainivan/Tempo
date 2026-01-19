@@ -107,16 +107,25 @@ export const DeepTaskEditor = memo(function DeepTaskEditor({
 
     return (
         <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0, height: 0 }}
-            transition={expandTransition}
+            transition={{
+                ...expandTransition,
+                layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
+            }}
             className="overflow-hidden"
             onKeyDown={handleKeyDown}
             onClick={handleEditorClick}
         >
             {/* Inner container for padding - keeps animation smooth */}
-            <div className="mt-4 pt-4 border-t border-border-subtle">
+            <motion.div
+                className="mt-4 pt-4 border-t border-border-subtle"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.1 }}
+            >
                 {/* Editor Controls */}
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -224,7 +233,7 @@ Examples:
                         <kbd className="px-1.5 py-0.5 bg-bg-tertiary rounded">⌘S</kbd> save
                     </span>
                 </div>
-            </div>
+            </motion.div>
         </motion.div>
     );
 });
