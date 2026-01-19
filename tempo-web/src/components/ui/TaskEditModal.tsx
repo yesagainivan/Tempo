@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import type { Task, Recurrence } from '../../lib/db';
-import { updateTask, rescheduleTask } from '../../lib/db';
+import { updateTask, rescheduleTask, db } from '../../lib/db';
 import { Button } from './Button';
 import { Input } from './Input';
+import { DatePicker } from './DatePicker';
 import { RecurrencePicker } from './RecurrencePicker';
+import { RepeatIcon } from '../icons';
 
 // =================================================================
 // TASK EDIT MODAL
@@ -23,56 +25,81 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
     const [recurrence, setRecurrence] = useState<Recurrence | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
 
+    // For recurring instances: switch to editing parent
+    const [parentTask, setParentTask] = useState<Task | null>(null);
+    const [isEditingParent, setIsEditingParent] = useState(false);
+
+    // The actual task being edited (either the passed task or its parent)
+    const editingTask = isEditingParent && parentTask ? parentTask : task;
+
     // Sync state when task changes
     useEffect(() => {
-        if (task) {
-            setTitle(task.title);
-            // Format date for input[type="date"]
-            const date = new Date(task.dueDate);
+        if (editingTask) {
+            setTitle(editingTask.title);
+            const date = new Date(editingTask.dueDate);
             setDueDate(date.toISOString().split('T')[0]);
-            setRecurrence(task.recurrence);
+            setRecurrence(editingTask.recurrence);
         }
-    }, [task]);
+    }, [editingTask]);
+
+    // Reset parent editing state when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setIsEditingParent(false);
+            setParentTask(null);
+        }
+    }, [isOpen]);
+
+    // Fetch parent task for recurring instances
+    const handleEditSeries = useCallback(async () => {
+        if (!task?.recurringParentId) return;
+
+        const parent = await db.tasks.get(task.recurringParentId);
+        if (parent) {
+            setParentTask(parent);
+            setIsEditingParent(true);
+        }
+    }, [task?.recurringParentId]);
+
+    // Go back to editing the instance
+    const handleBackToInstance = () => {
+        setIsEditingParent(false);
+        setParentTask(null);
+    };
 
     const handleSave = useCallback(async () => {
-        if (!task || !title.trim()) return;
+        if (!editingTask || !title.trim()) return;
 
         setIsSaving(true);
         try {
-            // Collect all updates
             const updates: Partial<Pick<Task, 'title' | 'recurrence'>> = {};
 
-            // Update title if changed
-            if (title.trim() !== task.title) {
+            if (title.trim() !== editingTask.title) {
                 updates.title = title.trim();
             }
 
-            // Update recurrence if changed
-            const recurrenceChanged = JSON.stringify(recurrence) !== JSON.stringify(task.recurrence);
+            const recurrenceChanged = JSON.stringify(recurrence) !== JSON.stringify(editingTask.recurrence);
             if (recurrenceChanged) {
                 updates.recurrence = recurrence;
             }
 
-            // Apply updates if any
             if (Object.keys(updates).length > 0) {
-                await updateTask(task.id, updates);
+                await updateTask(editingTask.id, updates);
             }
 
-            // Reschedule if date changed
-            // Parse date string (YYYY-MM-DD) correctly to local timezone
             const [year, month, day] = dueDate.split('-').map(Number);
-            const newDate = new Date(year, month - 1, day); // month is 0-indexed
-            const oldDate = new Date(task.dueDate);
+            const newDate = new Date(year, month - 1, day);
+            const oldDate = new Date(editingTask.dueDate);
 
             if (newDate.toDateString() !== oldDate.toDateString()) {
-                await rescheduleTask(task.id, newDate);
+                await rescheduleTask(editingTask.id, newDate);
             }
 
             onClose();
         } finally {
             setIsSaving(false);
         }
-    }, [task, title, dueDate, recurrence, onClose]);
+    }, [editingTask, title, dueDate, recurrence, onClose]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -92,8 +119,9 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
 
     if (!task) return null;
 
-    // Don't show recurrence for generated instances
-    const showRecurrence = !task.isRecurringInstance;
+    // Show recurrence picker only for templates (not instances)
+    const showRecurrence = !editingTask?.isRecurringInstance;
+    const isInstance = task.isRecurringInstance && !isEditingParent;
 
     return createPortal(
         <AnimatePresence>
@@ -117,9 +145,25 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                         transition={{ type: 'spring', damping: 25, stiffness: 400 }}
                     >
                         <div className="p-6">
-                            <h2 className="text-lg font-semibold text-text-primary mb-4">
-                                {task.isRecurringInstance ? 'Edit Instance' : 'Edit Task'}
-                            </h2>
+                            {/* Header with context */}
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-semibold text-text-primary">
+                                    {isEditingParent
+                                        ? 'Edit Recurring Series'
+                                        : isInstance
+                                            ? 'Edit Occurrence'
+                                            : 'Edit Task'
+                                    }
+                                </h2>
+                                {isEditingParent && (
+                                    <button
+                                        onClick={handleBackToInstance}
+                                        className="text-xs text-text-muted hover:text-text-secondary"
+                                    >
+                                        ← Back to occurrence
+                                    </button>
+                                )}
+                            </div>
 
                             <div className="space-y-4">
                                 {/* Title Input */}
@@ -132,29 +176,13 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                 />
 
                                 {/* Date Input */}
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-medium text-text-secondary">
-                                        Due Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
-                                        className="
-                                            w-full px-3 py-2
-                                            bg-bg-secondary
-                                            border border-border-default
-                                            rounded-lg
-                                            text-text-primary
-                                            transition-all duration-200
-                                            hover:border-border-subtle
-                                            focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary
-                                            [color-scheme:dark]
-                                        "
-                                    />
-                                </div>
+                                <DatePicker
+                                    label={isEditingParent ? 'Series Start Date' : 'Due Date'}
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                />
 
-                                {/* Recurrence Picker */}
+                                {/* Recurrence Picker (for templates) */}
                                 {showRecurrence && (
                                     <div className="pt-2">
                                         <RecurrencePicker
@@ -162,6 +190,24 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                             onChange={setRecurrence}
                                         />
                                     </div>
+                                )}
+
+                                {/* Recurring Instance: Edit Series Button */}
+                                {isInstance && (
+                                    <button
+                                        onClick={handleEditSeries}
+                                        className="
+                                            w-full flex items-center justify-center gap-2
+                                            px-3 py-2.5 mt-2
+                                            bg-accent-primary/10 hover:bg-accent-primary/15
+                                            text-accent-primary text-sm font-medium
+                                            rounded-lg border border-accent-primary/20
+                                            transition-all duration-200
+                                        "
+                                    >
+                                        <RepeatIcon className="w-4 h-4" />
+                                        Edit Recurring Series
+                                    </button>
                                 )}
                             </div>
 
@@ -180,7 +226,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                     size="sm"
                                     disabled={!title.trim() || isSaving}
                                 >
-                                    {isSaving ? 'Saving...' : 'Save'}
+                                    {isSaving ? 'Saving...' : isEditingParent ? 'Save Series' : 'Save'}
                                 </Button>
                             </div>
 
@@ -199,4 +245,3 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
         document.body
     );
 }
-

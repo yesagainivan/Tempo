@@ -129,12 +129,46 @@ export async function getTasksInRange(startDate: Date, endDate: Date): Promise<T
  */
 export async function toggleTaskComplete(taskId: string): Promise<void> {
     const task = await db.tasks.get(taskId);
+
     if (task) {
+        // Task exists in DB - simple toggle
         await db.tasks.update(taskId, {
             completed: !task.completed,
             completedAt: task.completed ? undefined : Date.now(),
             updatedAt: Date.now(),
         });
+    } else {
+        // Virtual recurring instance - need to persist it first as completed
+        // The ID format is parentId_timestamp, so we can extract parent info
+        const underscoreIndex = taskId.lastIndexOf('_');
+        if (underscoreIndex > 0) {
+            const parentId = taskId.slice(0, underscoreIndex);
+            const parent = await db.tasks.get(parentId);
+
+            if (parent && parent.recurrence) {
+                // Parse the date from the instance ID
+                const dateStr = taskId.slice(underscoreIndex + 1);
+                const dueDate = parseInt(dateStr, 36);
+
+                // Create and persist the completed instance
+                const instance: Task = {
+                    id: taskId,
+                    title: parent.title,
+                    type: parent.type,
+                    content: parent.content,
+                    dueDate,
+                    completed: true,
+                    completedAt: Date.now(),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    order: parent.order,
+                    recurringParentId: parentId,
+                    isRecurringInstance: true,
+                };
+
+                await db.tasks.add(instance);
+            }
+        }
     }
 }
 

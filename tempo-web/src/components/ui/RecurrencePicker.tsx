@@ -1,8 +1,9 @@
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Recurrence, RecurrencePattern } from '../../lib/db';
 import { formatRecurrence } from '../../lib/db/recurrence';
 import { RepeatIcon } from '../icons';
+import { DatePicker } from './DatePicker';
 
 // =================================================================
 // RECURRENCE PICKER - Elegant inline recurrence selector
@@ -38,17 +39,41 @@ export const RecurrencePicker = memo(function RecurrencePicker({
     const [pattern, setPattern] = useState<RecurrencePattern>(value?.pattern || 'daily');
     const [interval, setInterval] = useState(value?.interval || 1);
     const [daysOfWeek, setDaysOfWeek] = useState<number[]>(value?.daysOfWeek || []);
+    const [hasEndDate, setHasEndDate] = useState(!!value?.endDate);
+    const [endDate, setEndDate] = useState<string>(
+        value?.endDate ? new Date(value.endDate).toISOString().split('T')[0] : ''
+    );
 
-    const updateRecurrence = useCallback((updates: Partial<Recurrence>) => {
+    // Sync internal state when value prop changes (e.g., when switching to edit parent)
+    useEffect(() => {
+        if (value) {
+            setIsExpanded(true);
+            setPattern(value.pattern);
+            setInterval(value.interval);
+            setDaysOfWeek(value.daysOfWeek || []);
+            setHasEndDate(!!value.endDate);
+            setEndDate(value.endDate ? new Date(value.endDate).toISOString().split('T')[0] : '');
+        } else {
+            setIsExpanded(false);
+            setPattern('daily');
+            setInterval(1);
+            setDaysOfWeek([]);
+            setHasEndDate(false);
+            setEndDate('');
+        }
+    }, [value]);
+
+    const updateRecurrence = useCallback((updates: Partial<Recurrence> & { endDate?: number }) => {
         const newRecurrence: Recurrence = {
             pattern: updates.pattern ?? pattern,
             interval: updates.interval ?? interval,
             daysOfWeek: updates.pattern === 'weekly' || pattern === 'weekly'
                 ? (updates.daysOfWeek ?? daysOfWeek)
                 : undefined,
+            endDate: updates.endDate !== undefined ? updates.endDate : (hasEndDate && endDate ? new Date(endDate).getTime() : undefined),
         };
         onChange(newRecurrence);
-    }, [pattern, interval, daysOfWeek, onChange]);
+    }, [pattern, interval, daysOfWeek, hasEndDate, endDate, onChange]);
 
     const handlePatternChange = (newPattern: RecurrencePattern) => {
         setPattern(newPattern);
@@ -71,6 +96,23 @@ export const RecurrencePicker = memo(function RecurrencePicker({
             : [...daysOfWeek, day].sort((a, b) => a - b);
         setDaysOfWeek(newDays);
         updateRecurrence({ daysOfWeek: newDays });
+    };
+
+    const handleEndDateToggle = () => {
+        const newHasEndDate = !hasEndDate;
+        setHasEndDate(newHasEndDate);
+        if (!newHasEndDate) {
+            setEndDate('');
+            updateRecurrence({ endDate: undefined });
+        }
+    };
+
+    const handleEndDateChange = (value: string) => {
+        setEndDate(value);
+        if (value) {
+            const timestamp = new Date(value).getTime();
+            updateRecurrence({ endDate: timestamp });
+        }
     };
 
     const handleToggle = () => {
@@ -122,7 +164,7 @@ export const RecurrencePicker = memo(function RecurrencePicker({
                         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                         className="overflow-hidden"
                     >
-                        <div className="space-y-4 pt-2">
+                        <div className="space-y-4 p-1">
                             {/* Pattern Pills */}
                             <div className="flex flex-wrap gap-2">
                                 {PATTERNS.map(({ value: p, label }) => (
@@ -199,11 +241,51 @@ export const RecurrencePicker = memo(function RecurrencePicker({
                                     </motion.div>
                                 )}
                             </AnimatePresence>
+
+                            {/* End Date Toggle & Input */}
+                            <div className="pt-2 space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={handleEndDateToggle}
+                                    className="flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors"
+                                >
+                                    <div className={`
+                                        w-4 h-4 rounded border transition-all
+                                        ${hasEndDate
+                                            ? 'bg-accent-primary border-accent-primary'
+                                            : 'border-border-default'
+                                        }
+                                    `}>
+                                        {hasEndDate && (
+                                            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    End date
+                                </button>
+
+                                <AnimatePresence>
+                                    {hasEndDate && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.15 }}
+                                        >
+                                            <DatePicker
+                                                value={endDate}
+                                                onChange={(e) => handleEndDateChange(e.target.value)}
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 });
 
@@ -233,6 +315,34 @@ export const RecurrenceBadge = memo(function RecurrenceBadge({
         >
             <RepeatIcon className="w-3 h-3" />
             <span>{formatRecurrence(recurrence)}</span>
+        </span>
+    );
+});
+
+// =================================================================
+// RECURRING INSTANCE BADGE - For virtual instances without full recurrence
+// =================================================================
+
+interface RecurringInstanceBadgeProps {
+    className?: string;
+}
+
+export const RecurringInstanceBadge = memo(function RecurringInstanceBadge({
+    className = '',
+}: RecurringInstanceBadgeProps) {
+    return (
+        <span
+            className={`
+                inline-flex items-center gap-1 px-1.5 py-0.5
+                text-[10px] font-medium
+                bg-accent-primary/10 text-accent-primary
+                rounded-md
+                ${className}
+            `}
+            title="Part of a recurring series"
+        >
+            <RepeatIcon className="w-3 h-3" />
+            <span>Recurring</span>
         </span>
     );
 });

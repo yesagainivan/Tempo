@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '../../lib/db';
 import { toggleTaskComplete, deleteTask, updateTask } from '../../lib/db';
 import { Checkbox, ConfirmDialog, TaskEditModal } from '../ui';
-import { RecurrenceBadge } from '../ui/RecurrencePicker';
+import { RecurrenceBadge, RecurringInstanceBadge } from '../ui/RecurrencePicker';
 import { TrashIcon, PencilIcon, DocumentIcon, LightningIcon, NoteIcon } from '../icons';
 import { useAppStore } from '../../stores/appStore';
 import { DeepTaskEditor } from './DeepTaskEditor';
@@ -119,16 +119,23 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                         {task.recurrence && (
                             <RecurrenceBadge recurrence={task.recurrence} />
                         )}
+                        {!task.recurrence && task.isRecurringInstance && (
+                            <RecurringInstanceBadge />
+                        )}
                         <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
                             Click to expand
                         </span>
                     </div>
                 )}
 
-                {/* Quick Task - Recurrence Badge (when not deep) */}
-                {!isDeep && task.recurrence && !task.completed && (
+                {/* Quick Task - Recurrence Badge (template or instance) */}
+                {!isDeep && !task.completed && (task.recurrence || task.isRecurringInstance) && (
                     <div className="mt-1">
-                        <RecurrenceBadge recurrence={task.recurrence} />
+                        {task.recurrence ? (
+                            <RecurrenceBadge recurrence={task.recurrence} />
+                        ) : (
+                            <RecurringInstanceBadge />
+                        )}
                     </div>
                 )}
 
