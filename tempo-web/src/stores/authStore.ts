@@ -45,7 +45,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'github',
             options: {
-                redirectTo: window.location.origin
+                // Ensure we redirect back to the full URL (including /Tempo/ subpath)
+                // window.location.origin only gives the domain (e.g. github.io)
+                redirectTo: window.location.origin + window.location.pathname
             }
         });
         if (error) throw error;
