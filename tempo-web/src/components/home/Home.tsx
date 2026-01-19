@@ -4,6 +4,8 @@ import { addMonths, subMonths, startOfMonth } from 'date-fns';
 import { CalendarTile } from './CalendarTile';
 import { TodayTile } from './TodayTile';
 import { UpcomingTile } from './UpcomingTile';
+import { StatsTile } from './StatsTile';
+import { StatsModal } from '../stats';
 
 // =================================================================
 // HOME DASHBOARD - Bento Grid Layout
@@ -16,6 +18,7 @@ interface HomeProps {
 export const Home = memo(function Home({ onSelectDate }: HomeProps) {
     const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
     const [selectedDate, setSelectedDate] = useState(() => new Date());
+    const [isStatsOpen, setIsStatsOpen] = useState(false);
 
     const goToPrevMonth = useCallback(() => {
         setCurrentMonth(prev => subMonths(prev, 1));
@@ -37,45 +40,62 @@ export const Home = memo(function Home({ onSelectDate }: HomeProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
         >
-            {/* Bento Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-                {/* Calendar Tile - Takes ~35% on large screens */}
-                <motion.div
-                    className="lg:col-span-4"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                >
-                    <CalendarTile
-                        currentMonth={currentMonth}
-                        selectedDate={selectedDate}
-                        onSelectDate={handleSelectDate}
-                        onPrevMonth={goToPrevMonth}
-                        onNextMonth={goToNextMonth}
-                    />
-                </motion.div>
+            {/* Bento Grid layout */}
+            <div className="space-y-4 lg:space-y-6">
 
-                {/* Right Column - Tasks & Insights */}
-                <div className="lg:col-span-8 space-y-4 lg:space-y-6">
-                    {/* Today's Tasks */}
+                {/* Top Row: Calendar (8) + Stats (4) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
                     <motion.div
+                        className="lg:col-span-8"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <CalendarTile
+                            currentMonth={currentMonth}
+                            selectedDate={selectedDate}
+                            onSelectDate={handleSelectDate}
+                            onPrevMonth={goToPrevMonth}
+                            onNextMonth={goToNextMonth}
+                        />
+                    </motion.div>
+
+                    <motion.div
+                        className="lg:col-span-4"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 }}
+                    >
+                        <StatsTile onClick={() => setIsStatsOpen(true)} />
+                    </motion.div>
+                </div>
+
+
+                {/* Bottom Row: Today (6) + Upcoming (6) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                     >
                         <TodayTile onViewDay={() => handleSelectDate(new Date())} />
                     </motion.div>
 
-                    {/* Upcoming Tasks */}
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
                     >
                         <UpcomingTile onSelectDate={handleSelectDate} />
                     </motion.div>
                 </div>
+
             </div>
+            {/* Stats Modal */}
+            <StatsModal
+                isOpen={isStatsOpen}
+                onClose={() => setIsStatsOpen(false)}
+            />
         </motion.div>
     );
 });
