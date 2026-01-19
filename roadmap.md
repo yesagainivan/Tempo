@@ -180,7 +180,7 @@ Tasks that repeat on a schedule.
 - [x] Recurrence patterns: daily, weekly, monthly, yearly
 - [x] Custom intervals (every N days/weeks)
 - [x] Day-of-week selection for weekly tasks
-- [ ] Optional end date or "X occurrences"
+- [x] Optional end date or "X occurrences"
 - [ ] Skip/complete instance without affecting series
 - [x] Natural language: `/task Water plants every 3 days`
 

@@ -111,7 +111,7 @@ export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) 
             </div>
 
             {/* Today accent line */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent-primary to-accent-secondary" />
+            {/* <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent-primary to-accent-secondary" /> */}
         </div>
     );
 });

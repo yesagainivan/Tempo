@@ -6,7 +6,7 @@ import { forwardRef, type ReactNode } from 'react';
 // =================================================================
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
     variant?: ButtonVariant;
@@ -26,6 +26,7 @@ const sizeStyles: Record<ButtonSize, string> = {
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2 text-base',
     lg: 'px-6 py-3 text-lg',
+    icon: 'p-2',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

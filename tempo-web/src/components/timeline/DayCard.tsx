@@ -163,14 +163,14 @@ export const DayCard = memo(function DayCard({ date }: DayCardProps) {
                 </div>
 
                 {/* Today's accent line */}
-                {today && (
+                {/* {today && (
                     <motion.div
                         className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent-primary to-accent-secondary"
                         initial={{ scaleY: 0 }}
                         animate={{ scaleY: 1 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
-                )}
+                )} */}
             </motion.div>
         </div>
     );

@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from './stores/appStore';
-import { Button } from './components/ui';
 import { Home } from './components/home';
 import { DayAgenda } from './components/calendar';
 import { CommandBar } from './components/command-bar';
-import { HomeIcon, ListIcon } from './components/icons';
+import { Header } from './components/layout/Header';
+import { SettingsModal } from './components/settings/SettingsModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from './lib/db';
 
@@ -20,6 +20,9 @@ function App() {
   // Navigation state
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+
+  // Settings state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Navigation handlers
   const handleSelectDate = useCallback((date: Date) => {
@@ -77,49 +80,14 @@ function App() {
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass">
-        <div className="flex items-center justify-between px-6 py-4">
-          {/* Logo */}
-          <motion.h1
-            className="text-xl font-semibold tracking-tight cursor-pointer"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={handleBackToHome}
-          >
-            <span className="text-accent-primary">Tempo</span>
-          </motion.h1>
-
-          {/* View Toggle */}
-          <nav className="flex items-center gap-2">
-            <Button
-              variant={viewMode === 'home' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={handleBackToHome}
-            >
-              <HomeIcon className="w-4 h-4 mr-2" /> Home
-            </Button>
-            <Button
-              variant={viewMode === 'day' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('day')}
-            >
-              <ListIcon className="w-4 h-4 mr-2" /> Day
-            </Button>
-          </nav>
-
-          {/* Command Bar Trigger */}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleCommandBar}
-          >
-            <span className="hidden sm:inline">Search</span>
-            <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-bg-tertiary rounded">
-              ⌘K
-            </kbd>
-          </Button>
-        </div>
-      </header>
+      {/* Header */}
+      <Header
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onHomeClick={handleBackToHome}
+        toggleCommandBar={toggleCommandBar}
+        openSettings={() => setIsSettingsOpen(true)}
+      />
 
       {/* Main Content Area */}
       <main className="pt-20 px-4 sm:px-6 pb-8">
@@ -161,6 +129,11 @@ function App() {
         onCreateTask={handleCreateTask}
         onJumpToDate={handleJumpToDate}
         onSelectTask={handleSelectTask}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );
