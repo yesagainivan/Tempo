@@ -8,9 +8,11 @@ import { Button } from '../ui/Button';
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onOpenAuth: () => void;
 }
 
-import { PlusIcon } from '../icons';
+import { PlusIcon, GithubIcon, LogOutIcon } from '../icons';
+import { useAuthStore } from '../../stores/authStore';
 
 const ACCENT_COLORS: { value: string; label: string }[] = [
     { value: '#7c5cff', label: 'Violet' },
@@ -27,7 +29,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: React.ElementType 
     { value: 'system', label: 'System', icon: MonitorIcon },
 ];
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, onOpenAuth }: SettingsModalProps) {
     const { theme, accentColor, setTheme, setAccentColor } = useThemeStore();
 
     return createPortal(
@@ -64,6 +66,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
+
+                            {/* Account Section */}
+                            <AccountSection onOpenAuth={onOpenAuth} />
+
+                            <hr className="border-border-subtle" />
 
                             {/* Theme Mode Section */}
                             <section className="space-y-4">
@@ -176,5 +183,32 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             )}
         </AnimatePresence>,
         document.body
+    );
+}
+
+function AccountSection({ onOpenAuth }: { onOpenAuth: () => void }) {
+    const { user, signOut } = useAuthStore();
+
+    return (
+        <section className="space-y-4">
+            <div>
+                <h3 className="text-base font-medium text-text-primary mb-1">Account</h3>
+                <p className="text-sm text-text-secondary">
+                    {user ? `Signed in as ${user.email}` : 'Sign in to sync your tasks across devices.'}
+                </p>
+            </div>
+
+            {user ? (
+                <Button variant="ghost" onClick={signOut} className="text-text-danger hover:text-text-danger hover:bg-bg-danger/10">
+                    <LogOutIcon className="w-4 h-4 mr-2" />
+                    Sign Out
+                </Button>
+            ) : (
+                <Button variant="primary" onClick={onOpenAuth}>
+                    <GithubIcon className="w-4 h-4 mr-2" />
+                    Sign In with GitHub
+                </Button>
+            )}
+        </section>
     );
 }

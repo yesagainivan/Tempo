@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, generateId, type Task, type TaskType } from '../lib/db';
+import { generateId, saveTask, deleteTask, updateTask, type Task, type TaskType } from '../lib/db';
 
 // =================================================================
 // APP STORE
@@ -72,17 +72,8 @@ export async function addTask(
         recurrence,
     };
 
-    await db.tasks.add(task);
+    await saveTask(task);
     return id;
 }
 
-export async function deleteTask(id: string): Promise<void> {
-    await db.tasks.delete(id);
-}
-
-export async function updateTask(id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<void> {
-    await db.tasks.update(id, {
-        ...updates,
-        updatedAt: Date.now(),
-    });
-}
+export { deleteTask, updateTask };

@@ -1,53 +1,42 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Task } from '../lib/db';
-import { startOfDay, endOfDay } from 'date-fns';
+import { useQuery } from '@powersync/react';
+import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { generateRecurringInstances } from '../lib/db/recurrence';
+import { type Task, type TaskType } from '../lib/db';
+import { useMemo } from 'react';
 
 // =================================================================
-// TASK HOOKS WITH RECURRING INSTANCE SUPPORT
+// HELPER: Row Mapper (Duplicate of db/index.ts for now logic)
 // =================================================================
 
-/**
- * Get all recurring task templates (tasks with recurrence defined)
- */
-async function getRecurringTemplates(): Promise<Task[]> {
-    const allTasks = await db.tasks.toArray();
-    return allTasks.filter(t => t.recurrence && !t.isRecurringInstance);
+function rowToTask(row: any): Task {
+    return {
+        id: row.id,
+        title: row.title,
+        type: row.type as TaskType,
+        content: row.content || '',
+        dueDate: row.due_date,
+        completed: row.completed === 1,
+        completedAt: row.completed_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        order: row.order_key,
+        recurrence: row.recurrence ? JSON.parse(row.recurrence) : undefined,
+        recurringParentId: row.recurring_parent_id,
+        isRecurringInstance: row.is_recurring_instance === 1,
+    };
 }
 
-/**
- * Check if a recurring instance has been completed (persisted)
- */
-async function getCompletedInstanceIds(): Promise<Set<string>> {
-    // Use filter instead of indexed query since isRecurringInstance isn't indexed
-    const allTasks = await db.tasks.toArray();
-    const completedInstances = allTasks.filter(
-        t => t.isRecurringInstance && t.completed
-    );
+// =================================================================
+// RECURRENCE MERGE LOGIC
+// =================================================================
 
-    return new Set(completedInstances.map(t => t.id));
-}
-
-/**
- * Generate virtual instances for a date range and merge with persisted data
- */
-async function getTasksWithRecurrence(
-    date: Date,
-    rangeStart?: Date,
-    rangeEnd?: Date
-): Promise<Task[]> {
-    const start = rangeStart ? startOfDay(rangeStart) : startOfDay(date);
-    const end = rangeEnd ? endOfDay(rangeEnd) : endOfDay(date);
-
-    // Get persisted tasks in range
-    const persistedTasks = await db.tasks
-        .where('dueDate')
-        .between(start.getTime(), end.getTime(), true, true)
-        .toArray();
-
-    // Get recurring templates
-    const templates = await getRecurringTemplates();
-
+function mergeTasksWithRecurrence(
+    rangeTasks: Task[],
+    templates: Task[],
+    completedInstanceIds: Set<string>,
+    start: Date,
+    end: Date
+): Task[] {
     // Generate virtual instances for each template
     const virtualInstances: Task[] = [];
     for (const template of templates) {
@@ -55,117 +44,162 @@ async function getTasksWithRecurrence(
         virtualInstances.push(...instances);
     }
 
-    // Check for already-completed instances (persisted separately)
-    const completedIds = await getCompletedInstanceIds();
+    // Filter out virtual instances that have a persisted version (completed or exception)
+    const persistedIds = new Set(rangeTasks.map(t => t.id));
 
-    // Filter out virtual instances that have a persisted version
-    const persistedIds = new Set(persistedTasks.map(t => t.id));
     const filteredVirtual = virtualInstances.filter(v => {
         // Don't add if already persisted (completed or otherwise)
         if (persistedIds.has(v.id)) return false;
-        // Don't add if marked as completed
-        if (completedIds.has(v.id)) return false;
+        // Don't add if marked as completed (and tracked in completed_ids set)
+        if (completedInstanceIds.has(v.id)) return false;
         return true;
     });
 
-    // Merge: persisted tasks + filtered virtual instances
-    // Also include the template on its original date
-    const result = [...persistedTasks, ...filteredVirtual];
-
-    return result;
+    return [...rangeTasks, ...filteredVirtual];
 }
+
+
+// =================================================================
+// REACTIVE HOOKS
+// =================================================================
 
 /**
  * Get all tasks for a specific date (reactive) - includes recurring instances
  */
 export function useTasksForDate(date: Date): Task[] {
-    const tasks = useLiveQuery(async () => {
-        const allTasks = await getTasksWithRecurrence(date);
+    const dayStart = startOfDay(date).getTime();
+    const dayEnd = endOfDay(date).getTime();
 
-        // Filter to only this specific date and sort
-        const dayStart = startOfDay(date).getTime();
-        const dayEnd = endOfDay(date).getTime();
+    // 1. Get standard tasks for the day
+    const { data: rangeRows } = useQuery(
+        `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
+        [dayStart, dayEnd]
+    );
 
-        return allTasks
-            .filter(t => t.dueDate >= dayStart && t.dueDate <= dayEnd)
-            .sort((a, b) => a.order - b.order);
-    }, [date.getTime()]);
+    // 2. Get recurring templates (to generate virtuals)
+    const { data: templateRows } = useQuery(
+        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
+    );
 
-    return tasks ?? [];
+    // 3. Get completed instance IDs (to exclude virtuals that are done)
+    // Note: We need completed instances that might NOT be in the range query if they are virtuals persisted?
+    // Actually, persisted virtuals ARE in rangeRows if they have due_date in range.
+    // The only edge case is if we track completion in a separate table, but currently we insert them into 'tasks'.
+    // So rangeRows covers completed instances for this day.
+    // We only need global completed check if we stored completions separately.
+    // Since persisted instances are in 'tasks', we are good.
+
+    const tasks = useMemo(() => {
+        const rangeTasks = rangeRows.map(rowToTask);
+        const templates = templateRows.map(rowToTask);
+
+        // Filter templates: exclude generated instances from templates list if any leak in
+        const cleanTemplates = templates.filter(t => !t.isRecurringInstance);
+
+        const merged = mergeTasksWithRecurrence(
+            rangeTasks,
+            cleanTemplates,
+            new Set(), // persisted instances are already in rangeTasks, so we don't need extra set check if logic holds
+            startOfDay(date),
+            endOfDay(date)
+        );
+
+        return merged.sort((a, b) => a.order - b.order);
+    }, [rangeRows, templateRows, date]);
+
+    return tasks;
 }
 
 /**
- * Get all tasks in a date range (reactive) - includes recurring instances
+ * Get all tasks in a date range (reactive)
  */
 export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
-    const tasks = useLiveQuery(async () => {
-        return getTasksWithRecurrence(startDate, startDate, endDate);
-    }, [startDate.getTime(), endDate.getTime()]);
+    const startTs = startDate.getTime();
+    const endTs = endDate.getTime();
 
-    return tasks ?? [];
+    const { data: rangeRows } = useQuery(
+        `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
+        [startTs, endTs]
+    );
+
+    const { data: templateRows } = useQuery(
+        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
+    );
+
+    const tasks = useMemo(() => {
+        const rangeTasks = rangeRows.map(rowToTask);
+        const templates = templateRows.map(rowToTask).filter(t => !t.isRecurringInstance);
+
+        return mergeTasksWithRecurrence(
+            rangeTasks,
+            templates,
+            new Set(),
+            startDate,
+            endDate
+        );
+    }, [rangeRows, templateRows, startDate, endDate]);
+
+    return tasks;
 }
 
 /**
  * Get a single task by ID (reactive)
  */
 export function useTask(taskId: string | null): Task | undefined {
-    const task = useLiveQuery(async () => {
-        if (!taskId) return undefined;
-        return db.tasks.get(taskId);
-    }, [taskId]);
+    const { data } = useQuery(
+        `SELECT * FROM tasks WHERE id = ?`,
+        taskId ? [taskId] : []
+    );
+
+    const task = useMemo(() => {
+        if (!data || data.length === 0) return undefined;
+        return rowToTask(data[0]);
+    }, [data]);
 
     return task;
 }
 
 /**
- * Get count of tasks for a date (for load visualization) - includes recurring
+ * Get count of tasks for a date
  */
 export function useTaskCountForDate(date: Date): number {
-    const count = useLiveQuery(async () => {
-        const tasks = await getTasksWithRecurrence(date);
-        const dayStart = startOfDay(date).getTime();
-        const dayEnd = endOfDay(date).getTime();
-
-        return tasks.filter(t =>
-            t.dueDate >= dayStart &&
-            t.dueDate <= dayEnd &&
-            !t.completed
-        ).length;
-    }, [date.getTime()]);
-
-    return count ?? 0;
+    // We can reuse useTasksForDate logic or optimize.
+    // Reusing is safer for consistency.
+    const tasks = useTasksForDate(date);
+    return tasks.filter(t => !t.completed).length;
 }
 
 /**
- * Get upcoming tasks for the next N days, grouped by date - includes recurring
+ * Get upcoming tasks for the next N days
  */
 export function useUpcomingTasks(days: number = 7): { date: Date; tasks: Task[] }[] {
-    const result = useLiveQuery(async () => {
-        const today = new Date();
-        const start = startOfDay(today);
+    const today = new Date();
+    const start = startOfDay(today);
+    // Start from tomorrow
+    const rangeStart = addDays(start, 1);
+    const rangeEnd = addDays(start, days);
 
-        // Build array of dates starting from tomorrow
-        const dates: Date[] = [];
-        for (let i = 1; i <= days; i++) {
-            const d = new Date(start);
-            d.setDate(d.getDate() + i);
-            dates.push(d);
-        }
+    const tasksInRange = useTasksInRange(rangeStart, rangeEnd);
 
-        // Fetch all tasks including recurring for entire range
-        const endDate = dates[dates.length - 1];
-        const allTasks = await getTasksWithRecurrence(dates[0], dates[0], endDate);
+    const result = useMemo(() => {
+        const groups: { date: Date; tasks: Task[] }[] = [];
 
-        // Group by date
-        return dates.map(date => {
+        // Group by day
+        for (let i = 0; i < days; i++) {
+            const date = addDays(rangeStart, i);
             const dayStart = startOfDay(date).getTime();
             const dayEnd = endOfDay(date).getTime();
-            const tasks = allTasks.filter(
+
+            const daysTasks = tasksInRange.filter(
                 t => t.dueDate >= dayStart && t.dueDate <= dayEnd && !t.completed
             );
-            return { date, tasks };
-        }).filter(group => group.tasks.length > 0);
-    }, [days]);
 
-    return result ?? [];
+            if (daysTasks.length > 0) {
+                groups.push({ date, tasks: daysTasks });
+            }
+        }
+        return groups;
+    }, [tasksInRange, rangeStart, days]);
+
+    return result;
 }

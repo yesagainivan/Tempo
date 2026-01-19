@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import type { Task, Recurrence } from '../../lib/db';
-import { updateTask, rescheduleTask, db } from '../../lib/db';
+import { updateTask, rescheduleTask, getTask } from '../../lib/db';
 import { Button } from './Button';
 import { Input } from './Input';
 import { DatePicker } from './DatePicker';
@@ -54,7 +54,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
     const handleEditSeries = useCallback(async () => {
         if (!task?.recurringParentId) return;
 
-        const parent = await db.tasks.get(task.recurringParentId);
+        const parent = await getTask(task.recurringParentId);
         if (parent) {
             setParentTask(parent);
             setIsEditingParent(true);
