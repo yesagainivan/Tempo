@@ -21,10 +21,11 @@ export const StatsTile = memo(function StatsTile({ onClick }: StatsTileProps) {
                 group
                 relative
                 overflow-hidden
+                transition-colors duration-300
+                hover:bg-bg-tertiary/50
             "
             whileHover={{
                 scale: 1.02,
-                backgroundColor: 'var(--color-bg-tertiary)', // Use theme token for hover
                 y: -2
             }}
             whileTap={{ scale: 0.98 }}
