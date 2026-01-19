@@ -1,5 +1,7 @@
 # Tempo
 
+![Tempo Banner](assets/Banner.webp)
+
 > **Time is the only folder.**
 
 Tempo is a temporal-first agenda app that anchors everything to time. It combines the elegance of calendar planning with the depth of Markdown notes — built for thoughtful makers who want honest, visual planning without the overhead of complex productivity systems.
@@ -24,11 +26,11 @@ Tempo is a temporal-first agenda app that anchors everything to time. It combine
 - **Home Dashboard** — Bento-style layout with calendar, today's tasks, and upcoming preview
 - **Calendar View** — Compact month grid with task indicators
 - **Day Agenda** — Focused view for a single day's tasks
+- **Deep Tasks** — Markdown notes that "bloom" from tasks
 - **Quick Tasks** — Fast capture with editing modal and completion animations
 - **Command Bar** — `Cmd+K` with natural language date parsing
 
 ### ⏳ Coming Next
-- **Deep Tasks** — Markdown notes that "bloom" from tasks
 
 [See the full roadmap →](roadmap.md)
 
@@ -60,7 +62,8 @@ The app will be available at `http://localhost:5173`
 | **Framework** | React 18 + TypeScript |
 | **Styling** | TailwindCSS v4 |
 | **Animations** | Framer Motion |
-| **Storage** | Dexie.js (IndexedDB) |
+| **Storage** | PowerSync (SQLite) + Dexie (Legacy) |
+| **Backend** | Supabase |
 | **Build** | Vite |
 
 ---
