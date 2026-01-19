@@ -29,7 +29,11 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
     };
 
     const handleDelete = async () => {
-        await deleteTask(task.id);
+        if (task.isRecurringInstance && task.recurringParentId) {
+            await deleteTask(task.recurringParentId);
+        } else {
+            await deleteTask(task.id);
+        }
     };
 
     const handleClick = () => {
@@ -233,20 +237,16 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 onClose={() => setIsDeleting(false)}
                 onConfirm={handleDelete}
                 title={
-                    task.recurrence
-                        ? 'Delete Recurring Task'
-                        : task.isRecurringInstance
-                            ? 'Delete This Occurrence'
-                            : 'Delete Task'
+                    (task.recurrence || task.isRecurringInstance)
+                        ? 'Delete Recurring Series'
+                        : 'Delete Task'
                 }
                 description={
-                    task.recurrence
-                        ? `Are you sure you want to delete "${task.title}"? This will stop all future occurrences.`
-                        : task.isRecurringInstance
-                            ? `This will only delete this single occurrence of "${task.title}". Future occurrences will not be affected.`
-                            : `Are you sure you want to delete "${task.title}"? This action cannot be undone.`
+                    (task.recurrence || task.isRecurringInstance)
+                        ? `This is a recurring task. Deleting it will remove "${task.title}" and all its future occurrences. This cannot be undone.`
+                        : `Are you sure you want to delete "${task.title}"? This action cannot be undone.`
                 }
-                confirmText={task.recurrence ? 'Delete All' : 'Delete'}
+                confirmText={(task.recurrence || task.isRecurringInstance) ? 'Delete Series' : 'Delete'}
                 variant="danger"
             />
 
