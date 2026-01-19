@@ -22,7 +22,7 @@ export const StatsModal = memo(function StatsModal({ isOpen, onClose }: StatsMod
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
+
 
     return createPortal(
         <AnimatePresence>

@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef, useEffect } from 'react';
 import { eachDayOfInterval, format, subDays, startOfWeek, endOfWeek, getDay } from 'date-fns';
 import { motion } from 'framer-motion';
 
@@ -7,6 +7,8 @@ interface HeatmapProps {
 }
 
 export const Heatmap = memo(function Heatmap({ data }: HeatmapProps) {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
     // Generate dates for the last 52 weeks (approx 1 year)
     // We want the grid to end on "Today" or end of this week
     const dates = useMemo(() => {
@@ -19,6 +21,13 @@ export const Heatmap = memo(function Heatmap({ data }: HeatmapProps) {
 
         return eachDayOfInterval({ start: gridStart, end });
     }, []);
+
+    // Auto-scroll to end on mount
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+        }
+    }, [dates]);
 
     // Helper to get color intensity
     const getColor = (count: number) => {
@@ -65,7 +74,10 @@ export const Heatmap = memo(function Heatmap({ data }: HeatmapProps) {
             </div>
 
             {/* Scrolling Container for mobile */}
-            <div className="overflow-x-auto pb-2 scrollbar-hide">
+            <div
+                ref={scrollContainerRef}
+                className="overflow-x-auto pb-2 scrollbar-hide"
+            >
                 <div className="min-w-max">
                     {/* Month Labels */}
                     <div className="flex mb-1 tick-labels h-4 relative">

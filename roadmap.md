@@ -162,18 +162,19 @@ tempo-web/
 
 ## Phase 2 Features (Post-MVP)
 
-### 6. Stats & Insights ⏳
-Track productivity patterns and celebrate progress.
+### 6. Stats & Insights 📊 (Complete)
+Visualizing progress to build momentum.
 
 **Requirements:**
-- [ ] Completion rate chart (daily/weekly/monthly)
-- [ ] Streak tracking (consecutive 100% days)
-- [ ] Productivity heatmap (best days/times)
+- [x] Task completion history
+- [x] "Streak" counter (consecutive days)
+- [x] Weekly/Monthly completion rates
+- [x] Activity Heatmap (GitHub style) days/times)
 - [ ] Weekly summary view
 
 ---
 
-### 7. Recurring Tasks 🔄
+### 7. Recurring Tasks 🔄 (Mostly Complete)
 Tasks that repeat on a schedule.
 
 **Requirements:**
@@ -181,13 +182,12 @@ Tasks that repeat on a schedule.
 - [x] Custom intervals (every N days/weeks)
 - [x] Day-of-week selection for weekly tasks
 - [x] Optional end date or "X occurrences"
-- [ ] Skip/complete instance without affecting series
+- [x] Skip instance functionality (Simlified: "Series Only" deletion strategy)
 - [x] Natural language: `/task Water plants every 3 days`
 
 Remaining Work
- Instance generation on task query (currently schema-only)
- End date / occurrence limit in RecurrencePicker
- Skip instance functionality
+ Instance generation on task query (currently schema-only) -- DONE
+ End date / occurrence limit in RecurrencePicker -- DONE
 
 assess what to do with `{/* Today accent line */}`
 
