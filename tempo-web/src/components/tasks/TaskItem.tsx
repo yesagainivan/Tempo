@@ -69,7 +69,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
     return (
         <motion.div
             className={`
-        group relative flex items-start gap-3
+        group relative flex flex-col gap-0
         p-3 sm:p-4 rounded-xl
         bg-bg-tertiary/50
         border border-transparent
@@ -82,138 +82,143 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
       `}
             animate={{ opacity: task.completed ? 0.5 : 1 }}
         >
-            {/* Checkbox */}
-            <motion.div layout="position" className="pt-0.5 flex-shrink-0">
-                <Checkbox
-                    checked={task.completed}
-                    onCheckedChange={handleToggle}
-                />
-            </motion.div>
+            {/* Header Row: Checkbox + Title + Actions */}
+            <div className="flex items-start gap-3 w-full relative">
+                {/* Checkbox */}
+                <motion.div layout="position" className="pt-0.5 flex-shrink-0">
+                    <Checkbox
+                        checked={task.completed}
+                        onCheckedChange={handleToggle}
+                    />
+                </motion.div>
 
-            {/* Task Content */}
-            <motion.div
-                layout="position"
-                className="flex-1 min-w-0"
-                onClick={handleClick}
-            >
-                <p
-                    className={`
+                {/* Task Title & Badges */}
+                <motion.div
+                    layout="position"
+                    className="flex-1 min-w-0"
+                    onClick={handleClick}
+                >
+                    <p
+                        className={`
             text-sm sm:text-base leading-relaxed
             transition-all duration-200
             ${task.completed
-                            ? 'line-through text-text-muted'
-                            : 'text-text-primary'
-                        }
+                                ? 'line-through text-text-muted'
+                                : 'text-text-primary'
+                            }
           `}
-                >
-                    {task.title}
-                </p>
+                    >
+                        {task.title}
+                    </p>
 
-                {/* Deep Task Indicator */}
-                {isDeep && !isExpanded && (
-                    <div className="flex items-center gap-2 mt-2">
-                        <span className="flex items-center gap-1 text-xs text-text-muted bg-bg-glass px-2 py-0.5 rounded-full">
-                            <NoteIcon className="w-3 h-3" />
-                            Notes
-                        </span>
-                        {task.recurrence && (
-                            <RecurrenceBadge recurrence={task.recurrence} />
-                        )}
-                        {!task.recurrence && task.isRecurringInstance && (
-                            <RecurringInstanceBadge />
-                        )}
-                        <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
-                            Click to expand
-                        </span>
-                    </div>
-                )}
-
-                {/* Quick Task - Recurrence Badge (template or instance) */}
-                {!isDeep && !task.completed && (task.recurrence || task.isRecurringInstance) && (
-                    <div className="mt-1">
-                        {task.recurrence ? (
-                            <RecurrenceBadge recurrence={task.recurrence} />
-                        ) : (
-                            <RecurringInstanceBadge />
-                        )}
-                    </div>
-                )}
-
-                {/* Quick Task Hint */}
-                {!isDeep && !task.completed && (
-                    <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
-                        Click to edit
-                    </span>
-                )}
-
-                {/* Expanded Content for Deep Tasks */}
-                <AnimatePresence>
-                    {isDeep && isExpanded && (
-                        <DeepTaskEditor
-                            task={task}
-                            onCollapse={() => setExpandedTaskId(null)}
-                        />
+                    {/* Deep Task Indicator */}
+                    {isDeep && !isExpanded && (
+                        <div className="flex items-center gap-2 mt-2">
+                            <span className="flex items-center gap-1 text-xs text-text-muted bg-bg-glass px-2 py-0.5 rounded-full">
+                                <NoteIcon className="w-3 h-3" />
+                                Notes
+                            </span>
+                            {task.recurrence && (
+                                <RecurrenceBadge recurrence={task.recurrence} />
+                            )}
+                            {!task.recurrence && task.isRecurringInstance && (
+                                <RecurringInstanceBadge />
+                            )}
+                            <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                                Click to expand
+                            </span>
+                        </div>
                     )}
-                </AnimatePresence>
-            </motion.div>
 
-            {/* Action Buttons - always visible when expanded, hover otherwise */}
-            <motion.div
-                layout="position"
-                className={`
+                    {/* Quick Task - Recurrence Badge (template or instance) */}
+                    {!isDeep && !task.completed && (task.recurrence || task.isRecurringInstance) && (
+                        <div className="mt-1">
+                            {task.recurrence ? (
+                                <RecurrenceBadge recurrence={task.recurrence} />
+                            ) : (
+                                <RecurringInstanceBadge />
+                            )}
+                        </div>
+                    )}
+
+                    {/* Quick Task Hint */}
+                    {!isDeep && !task.completed && (
+                        <span className="text-xs text-text-muted opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+                            Click to edit
+                        </span>
+                    )}
+                </motion.div>
+
+                {/* Action Buttons - always visible when expanded, hover otherwise */}
+                <motion.div
+                    layout="position"
+                    className={`
                 flex items-center gap-1
                 transition-opacity duration-200
                 ${isExpanded ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}
                 ${task.completed ? 'opacity-0' : ''}
             `}>
-                {/* Type Toggle Button */}
-                <button
-                    className={`
+                    {/* Type Toggle Button */}
+                    <button
+                        className={`
                         p-1.5 text-text-muted rounded-lg transition-colors
                         ${isDeep
-                            ? 'hover:text-warning hover:bg-warning/10'
-                            : 'hover:text-accent-primary hover:bg-accent-primary/10'
-                        }
+                                ? 'hover:text-warning hover:bg-warning/10'
+                                : 'hover:text-accent-primary hover:bg-accent-primary/10'
+                            }
                     `}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (isDeep) {
-                            handleDemote();
-                        } else {
-                            handlePromote();
-                        }
-                    }}
-                    title={isDeep ? 'Convert to quick task' : 'Add notes (deep task)'}
-                >
-                    {isDeep ? (
-                        <LightningIcon className="w-4 h-4" />
-                    ) : (
-                        <DocumentIcon className="w-4 h-4" />
-                    )}
-                </button>
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isDeep) {
+                                handleDemote();
+                            } else {
+                                handlePromote();
+                            }
+                        }}
+                        title={isDeep ? 'Convert to quick task' : 'Add notes (deep task)'}
+                    >
+                        {isDeep ? (
+                            <LightningIcon className="w-4 h-4" />
+                        ) : (
+                            <DocumentIcon className="w-4 h-4" />
+                        )}
+                    </button>
 
-                {/* Edit Button */}
-                <button
-                    className="p-1.5 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditing(true);
-                    }}
-                >
-                    <PencilIcon className="w-4 h-4" />
-                </button>
+                    {/* Edit Button */}
+                    <button
+                        className="p-1.5 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditing(true);
+                        }}
+                    >
+                        <PencilIcon className="w-4 h-4" />
+                    </button>
 
-                {/* Delete Button */}
-                <button
-                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setIsDeleting(true);
-                    }}
-                >
-                    <TrashIcon className="w-4 h-4" />
-                </button>
-            </motion.div>
+                    {/* Delete Button */}
+                    <button
+                        className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsDeleting(true);
+                        }}
+                    >
+                        <TrashIcon className="w-4 h-4" />
+                    </button>
+                </motion.div>
+            </div>
+
+            {/* Expanded Content for Deep Tasks - Full Width */}
+            <AnimatePresence>
+                {isDeep && isExpanded && (
+                    <div className="w-full">
+                        <DeepTaskEditor
+                            task={task}
+                            onCollapse={() => setExpandedTaskId(null)}
+                        />
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Edit Modal */}
             <TaskEditModal
@@ -264,7 +269,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
             hidden sm:flex
             px-2 py-1 text-[10px] uppercase tracking-wider font-medium
             bg-accent-primary/10 text-accent-primary
-            rounded-md flex-shrink-0
+            rounded-md flex-shrink-0 pointer-events-none
             opacity-100 group-hover:opacity-0 transition-opacity duration-200
             animate-[fadeIn_0.2s_ease-out]
           "

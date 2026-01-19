@@ -4,6 +4,7 @@ import { XIcon, SunIcon, MoonIcon, MonitorIcon } from '../icons';
 import { useThemeStore } from '../../stores/useThemeStore';
 import type { ThemeMode } from '../../stores/useThemeStore';
 import { Button } from '../ui/Button';
+import { ColorPicker } from '../ui/ColorPicker';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -11,7 +12,7 @@ interface SettingsModalProps {
     onOpenAuth: () => void;
 }
 
-import { PlusIcon, GithubIcon, LogOutIcon } from '../icons';
+import { GithubIcon, LogOutIcon } from '../icons';
 import { useAuthStore } from '../../stores/authStore';
 
 const ACCENT_COLORS: { value: string; label: string }[] = [
@@ -109,39 +110,11 @@ export function SettingsModal({ isOpen, onClose, onOpenAuth }: SettingsModalProp
                                 </div>
 
                                 <div className="flex flex-wrap gap-4">
-                                    {/* Color Picker Input (Hidden) */}
-                                    <input
-                                        type="color"
-                                        id="custom-color-picker"
-                                        value={accentColor}
-                                        onChange={(e) => setAccentColor(e.target.value)}
-                                        className="sr-only"
+                                    {/* Custom Color Picker */}
+                                    <ColorPicker
+                                        color={accentColor}
+                                        onChange={setAccentColor}
                                     />
-
-                                    {/* Custom Color Button */}
-                                    <button
-                                        onClick={() => document.getElementById('custom-color-picker')?.click()}
-                                        className={`
-                                            group relative w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-105
-                                            bg-gradient-to-br from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500
-                                            ring-2 ring-offset-2 ring-offset-bg-secondary
-                                            ${!ACCENT_COLORS.some(c => c.value === accentColor)
-                                                ? 'ring-accent-primary scale-110'
-                                                : 'ring-transparent hover:ring-border-default'
-                                            }
-                                        `}
-                                        title="Custom Color"
-                                    >
-                                        {!ACCENT_COLORS.some(c => c.value === accentColor) ? (
-                                            <motion.div
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                className="w-4 h-4 bg-white rounded-full shadow-sm"
-                                            />
-                                        ) : (
-                                            <PlusIcon className="w-5 h-5 text-white drop-shadow-md opacity-80 group-hover:opacity-100" />
-                                        )}
-                                    </button>
                                     {ACCENT_COLORS.map((color) => (
                                         <button
                                             key={color.value}
