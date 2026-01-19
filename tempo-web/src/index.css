@@ -143,10 +143,10 @@ body {
    FOCUS STYLES
    ================================================================= */
 
-:focus-visible {
+/* :focus-visible:not(input):not(textarea) {
   outline: 2px solid var(--color-accent-primary);
   outline-offset: 2px;
-}
+} */
 
 /* =================================================================
    UTILITY CLASSES

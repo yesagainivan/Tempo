@@ -199,7 +199,7 @@ export const RecurrencePicker = memo(function RecurrencePicker({
                                         w-14 px-2 py-1 text-sm text-center
                                         bg-bg-tertiary border border-border-subtle rounded-lg
                                         text-text-primary
-                                        focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary/30
+                                        focus:outline-none focus:border-accent-primary
                                     "
                                 />
                                 <span className="text-sm text-text-secondary">{getIntervalLabel()}</span>

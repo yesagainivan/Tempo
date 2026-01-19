@@ -35,9 +35,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             placeholder:text-text-muted
             transition-all duration-200
             hover:border-border-subtle
-            focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary
+            focus:outline-none focus:border-accent-primary
+            border-border-default
             disabled:opacity-50 disabled:cursor-not-allowed
-            ${error ? 'border-error focus:border-error focus:ring-error' : ''}
+            ${error ? 'border-error focus:border-error' : ''}
             ${className}
           `}
                     {...props}
