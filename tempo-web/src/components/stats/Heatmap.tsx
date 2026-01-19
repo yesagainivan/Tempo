@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, useEffect } from 'react';
 import { eachDayOfInterval, format, subDays, startOfWeek, endOfWeek, getDay } from 'date-fns';
-
+import { motion } from 'framer-motion';
 
 interface HeatmapProps {
     data: Map<string, number>;
@@ -78,7 +78,12 @@ export const Heatmap = memo(function Heatmap({ data }: HeatmapProps) {
                 ref={scrollContainerRef}
                 className="overflow-x-auto pb-2 scrollbar-hide"
             >
-                <div className="min-w-max">
+                <motion.div
+                    className="min-w-max"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                >
                     {/* Month Labels */}
                     <div className="flex mb-1 tick-labels h-4 relative">
                         {monthLabels.map((label, i) => (
@@ -109,18 +114,14 @@ export const Heatmap = memo(function Heatmap({ data }: HeatmapProps) {
                                         w-2.5 h-2.5 rounded-sm 
                                         transition-colors duration-200
                                         ${getColor(count)}
-                                        animate-pop-in
-                                        opacity-0
                                     `}
-                                    style={{
-                                        animationDelay: `${Math.random() * 0.5}s`
-                                    }}
                                 />
                             );
                         })}
                     </div>
-                </div>
+                </motion.div>
             </div>
         </div>
     );
 });
+
