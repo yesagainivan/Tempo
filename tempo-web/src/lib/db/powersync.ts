@@ -47,22 +47,31 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
             for (const op of transaction.crud) {
                 const table = op.table;
                 const id = op.id;
+                console.log(`[PowerSync] Uploading ${op.op} to ${table}: ${id}`, op.opData);
 
                 // Map Supabase REST API calls
-                // Note: We use the table name directly
                 if (op.op === 'PUT') {
-                    const data = { ...op.opData, id };
-                    await this.client.from(table).upsert(data);
+                    const session = await this.client.auth.getSession();
+                    const user_id = session.data.session?.user.id;
+
+                    // Explicitly inject user_id to ensure RLS/Not-Null constraints are satisfied
+                    const data = { ...op.opData, id, user_id };
+
+                    const { error } = await this.client.from(table).upsert(data);
+                    if (error) throw error;
                 } else if (op.op === 'PATCH') {
-                    await this.client.from(table).update(op.opData).eq('id', id);
+                    const { error } = await this.client.from(table).update(op.opData).eq('id', id);
+                    if (error) throw error;
                 } else if (op.op === 'DELETE') {
-                    await this.client.from(table).delete().eq('id', id);
+                    const { error } = await this.client.from(table).delete().eq('id', id);
+                    if (error) throw error;
                 }
             }
 
             await transaction.complete();
-        } catch (ex) {
-            console.error('Data upload failed', ex);
+            console.log('[PowerSync] Transaction completed successfully');
+        } catch (ex: any) {
+            console.error('[PowerSync] Data upload failed', JSON.stringify(ex, null, 2));
             // Verify if we should rollback or just retry later
             // For now, simpler to not complete transaction so it retries
             // await transaction.complete(); 

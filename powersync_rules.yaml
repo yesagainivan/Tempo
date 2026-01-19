@@ -1,0 +1,7 @@
+bucket_definitions:
+  user_tasks:
+    # Capture the authenticated user's ID
+    parameters: SELECT request.user_id() as user_id
+    data:
+      # Sync tasks matching the user_id
+      - SELECT * FROM tasks WHERE user_id = bucket.user_id
