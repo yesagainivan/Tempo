@@ -163,7 +163,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 className={`
                 flex items-center gap-1
                 transition-opacity duration-200
-                ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                ${isExpanded ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}
                 ${task.completed ? 'opacity-0' : ''}
             `}>
                 {/* Type Toggle Button */}
@@ -261,6 +261,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 <span
                     className="
             absolute top-3 right-3
+            hidden sm:flex
             px-2 py-1 text-[10px] uppercase tracking-wider font-medium
             bg-accent-primary/10 text-accent-primary
             rounded-md flex-shrink-0

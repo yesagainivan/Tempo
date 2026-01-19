@@ -47,7 +47,6 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
             for (const op of transaction.crud) {
                 const table = op.table;
                 const id = op.id;
-                console.log(`[PowerSync] Uploading ${op.op} to ${table}: ${id}`, op.opData);
 
                 // Map Supabase REST API calls
                 if (op.op === 'PUT') {
@@ -69,9 +68,8 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
             }
 
             await transaction.complete();
-            console.log('[PowerSync] Transaction completed successfully');
-        } catch (ex: any) {
-            console.error('[PowerSync] Data upload failed', JSON.stringify(ex, null, 2));
+        } catch (ex) {
+            console.error('Data upload failed', ex);
             // Verify if we should rollback or just retry later
             // For now, simpler to not complete transaction so it retries
             // await transaction.complete(); 

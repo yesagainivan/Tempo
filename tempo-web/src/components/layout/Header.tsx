@@ -103,7 +103,7 @@ function NavButton({ isActive, onClick, icon: Icon, label }: { isActive: boolean
                 />
             )}
             <Icon size={14} className={isActive ? "text-accent-primary" : ""} />
-            <span>{label}</span>
+            <span className="hidden sm:inline">{label}</span>
         </button>
     );
 }

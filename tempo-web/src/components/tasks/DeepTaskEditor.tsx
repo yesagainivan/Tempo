@@ -168,7 +168,7 @@ export const DeepTaskEditor = memo(function DeepTaskEditor({
                 </div>
 
                 {/* Content Area - CSS transitions only, no Framer layout animations */}
-                <div className="bg-bg-glass rounded-xl p-4 min-h-[120px] relative">
+                <div className="bg-bg-glass rounded-xl p-3 sm:p-5 min-h-[120px] relative">
                     {/* Editor Layer */}
                     <div
                         className={`

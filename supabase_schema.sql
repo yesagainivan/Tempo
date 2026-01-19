@@ -18,7 +18,7 @@ create table public.tasks (
   completed integer default 0,
   is_recurring_instance integer default 0,
   
-  order_key integer,
+  order_key bigint,
   
   recurrence text,
   recurring_parent_id text
