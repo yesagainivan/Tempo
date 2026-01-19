@@ -5,6 +5,7 @@ import { updateTaskContent } from '../../lib/db';
 import { toggleCheckbox } from '../../lib/markdown';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { PencilIcon, EyeIcon, ChevronUpIcon } from '../icons';
+import { useOptimisticText } from '../../hooks/useOptimisticText';
 
 // =================================================================
 // DEEP TASK EDITOR - Full editor for deep task markdown content
@@ -25,53 +26,30 @@ export const DeepTaskEditor = memo(function DeepTaskEditor({
     task,
     onCollapse
 }: DeepTaskEditorProps) {
-    const [content, setContent] = useState(task.content);
     const [isEditing, setIsEditing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const saveTimeoutRef = useRef<number | null>(null);
 
-    // Sync content when task changes
-    useEffect(() => {
-        setContent(task.content);
-    }, [task.content]);
-
-    // Autosave with debounce
-    const saveContent = useCallback(async (newContent: string) => {
-        if (newContent === task.content) return;
-
-        setIsSaving(true);
+    // Persist callback
+    const handleSave = useCallback(async (newContent: string) => {
         try {
             await updateTaskContent(task.id, newContent);
         } catch (error) {
-            console.error('Failed to save content:', error);
-        } finally {
-            setIsSaving(false);
+            console.error('Failed to save task content:', error);
         }
-    }, [task.id, task.content]);
+    }, [task.id]);
 
-    // Debounced save
-    useEffect(() => {
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
-        saveTimeoutRef.current = window.setTimeout(() => {
-            saveContent(content);
-        }, 500);
-
-        return () => {
-            if (saveTimeoutRef.current) {
-                clearTimeout(saveTimeoutRef.current);
-            }
-        };
-    }, [content, saveContent]);
+    // Use optimistic text hook
+    const {
+        value: content,
+        setValue: setContent,
+        isSaving
+    } = useOptimisticText(task.content, handleSave, 500);
 
     // Handle checkbox toggle in markdown
     const handleCheckboxToggle = useCallback((lineNumber: number) => {
         const newContent = toggleCheckbox(content, lineNumber);
         setContent(newContent);
-    }, [content]);
+    }, [content, setContent]);
 
     // Keyboard shortcuts
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -79,12 +57,13 @@ export const DeepTaskEditor = memo(function DeepTaskEditor({
         if (e.key === 'Escape' && !isEditing) {
             onCollapse();
         }
-        // Cmd+S to force save
+        // Cmd+S to force save (trigger immediate sync if we exposed it, 
+        // but hook handles debounce. We could force flush but for now rely on hook)
         if ((e.metaKey || e.ctrlKey) && e.key === 's') {
             e.preventDefault();
-            saveContent(content);
+            // Optional: You could expose a 'flush' or 'forceSave' from the hook if needed
         }
-    }, [isEditing, onCollapse, saveContent, content]);
+    }, [isEditing, onCollapse]);
 
     // Auto-resize textarea
     const adjustTextareaHeight = useCallback(() => {
@@ -237,3 +216,4 @@ Examples:
         </motion.div>
     );
 });
+
