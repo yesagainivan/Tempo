@@ -26,7 +26,7 @@ export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {/* Today Badge */}
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent-primary text-white shadow-lg shadow-accent-primary/30">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent-primary text-white shadow-lg shadow-accent-primary/10">
                             <span className="text-lg font-bold">{format(today, 'd')}</span>
                         </div>
                         <div>

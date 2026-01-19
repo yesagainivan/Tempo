@@ -16,10 +16,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
             <Input
                 ref={ref}
                 type="date"
-                className={`
-                    [color-scheme:dark]
-                    ${className}
-                `}
+                className={className}
                 {...props}
             />
         );

@@ -217,3 +217,10 @@ export const MonitorIcon = (props: IconProps) => (
         <line x1="12" x2="12" y1="17" y2="21" />
     </IconBase>
 );
+
+export const PlusIcon = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+    </IconBase>
+);

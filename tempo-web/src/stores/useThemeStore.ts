@@ -3,13 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
-export type AccentColor =
-    | '#7c5cff' // Purple (Default)
-    | '#3b82f6' // Blue
-    | '#10b981' // Emerald
-    | '#f43f5e' // Rose
-    | '#f59e0b' // Amber
-    | '#06b6d4'; // Cyan
+export type AccentColor = string;
 
 interface ThemeState {
     theme: ThemeMode;
