@@ -1,4 +1,4 @@
-import { useQuery } from '@powersync/react';
+import { useQuery } from '@powersync/tanstack-react-query';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { generateRecurringInstances } from '../lib/db/recurrence';
 import { type Task, type TaskType } from '../lib/db';
@@ -71,15 +71,19 @@ export function useTasksForDate(date: Date): Task[] {
     const dayEnd = endOfDay(date).getTime();
 
     // 1. Get standard tasks for the day
-    const { data: rangeRows } = useQuery(
-        `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
-        [dayStart, dayEnd]
-    );
+    const { data: rangeRows = [] } = useQuery({
+        queryKey: ['tasks', 'date', dayStart, dayEnd],
+        query: `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
+        parameters: [dayStart, dayEnd],
+        initialData: []
+    });
 
     // 2. Get recurring templates (to generate virtuals)
-    const { data: templateRows } = useQuery(
-        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
-    );
+    const { data: templateRows = [] } = useQuery({
+        queryKey: ['tasks', 'templates'],
+        query: `SELECT * FROM tasks WHERE recurrence IS NOT NULL`,
+        initialData: []
+    });
 
     // 3. Get completed instance IDs (to exclude virtuals that are done)
     // Note: We need completed instances that might NOT be in the range query if they are virtuals persisted?
@@ -117,14 +121,18 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
     const startTs = startDate.getTime();
     const endTs = endDate.getTime();
 
-    const { data: rangeRows } = useQuery(
-        `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
-        [startTs, endTs]
-    );
+    const { data: rangeRows = [] } = useQuery({
+        queryKey: ['tasks', 'range', startTs, endTs],
+        query: `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
+        parameters: [startTs, endTs],
+        initialData: []
+    });
 
-    const { data: templateRows } = useQuery(
-        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
-    );
+    const { data: templateRows = [] } = useQuery({
+        queryKey: ['tasks', 'templates'],
+        query: `SELECT * FROM tasks WHERE recurrence IS NOT NULL`,
+        initialData: []
+    });
 
     const tasks = useMemo(() => {
         const rangeTasks = rangeRows.map(rowToTask);
@@ -146,10 +154,13 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
  * Get a single task by ID (reactive)
  */
 export function useTask(taskId: string | null): Task | undefined {
-    const { data } = useQuery(
-        `SELECT * FROM tasks WHERE id = ?`,
-        taskId ? [taskId] : []
-    );
+    const { data } = useQuery({
+        queryKey: ['tasks', 'detail', taskId],
+        query: `SELECT * FROM tasks WHERE id = ?`,
+        parameters: taskId ? [taskId] : [],
+        enabled: !!taskId,
+        initialData: []
+    });
 
     const task = useMemo(() => {
         if (!data || data.length === 0) return undefined;

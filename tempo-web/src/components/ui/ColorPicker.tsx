@@ -34,18 +34,25 @@ export function ColorPicker({ color, onChange, label }: ColorPickerProps) {
         };
     }, [isOpen]);
 
-    const presetColors = [
-        '#7c5cff', // Violet
-        '#3b82f6', // Blue
-        '#06b6d4', // Cyan
-        '#10b981', // Emerald
-        '#84cc16', // Lime
-        '#f59e0b', // Amber
-        '#ef4444', // Red
-        '#f43f5e', // Rose
-        '#d946ef', // Fuchsia
-        '#8b5cf6', // Indigo
-    ];
+    // HSL to Hex helper
+    const hslToHex = (h: number, s: number, l: number) => {
+        l /= 100;
+        const a = s * Math.min(l, 1 - l) / 100;
+        const f = (n: number) => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`;
+    };
+
+    const handleHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const hue = parseInt(e.target.value);
+        setTempColor(hslToHex(hue, 100, 50));
+    };
+
+    // Calculate initial hue from hex if possible (simplified) or default to 0
+    // This is optional but good for UX. For now, we'll let the slider control.
 
     const handleApply = () => {
         if (/^#[0-9A-F]{6}$/i.test(tempColor)) {
@@ -87,15 +94,19 @@ export function ColorPicker({ color, onChange, label }: ColorPickerProps) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="absolute top-full left-0 mt-2 z-50 w-64 p-4 rounded-xl bg-bg-secondary border border-border-default shadow-card"
+                        className="absolute bottom-full left-0 mb-2 z-50 w-64 p-4 rounded-xl bg-bg-secondary border border-border-default shadow-card"
                     >
-                        <div className="space-y-4">
-                            {/* Hex Input */}
-                            <div>
-                                <label className="text-xs text-text-muted mb-1.5 block">Hex Code</label>
-                                <div className="flex gap-2">
-                                    <div className="relative flex-1">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted select-none">#</span>
+                        <div className="space-y-5">
+                            {/* Color Preview & Hex */}
+                            <div className="flex gap-3">
+                                <div
+                                    className="w-12 h-12 rounded-xl border border-border-subtle shadow-sm flex-shrink-0"
+                                    style={{ backgroundColor: /^#[0-9A-F]{6}$/i.test(tempColor) ? tempColor : 'transparent' }}
+                                />
+                                <div className="flex-1">
+                                    <label className="text-xs text-text-muted mb-1 block">Hex Code</label>
+                                    <div className="relative">
+                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted select-none">#</span>
                                         <input
                                             type="text"
                                             value={tempColor.replace('#', '')}
@@ -104,37 +115,29 @@ export function ColorPicker({ color, onChange, label }: ColorPickerProps) {
                                                 setTempColor(`#${val}`);
                                             }}
                                             className="
-                                                w-full pl-7 pr-3 py-1.5 rounded-lg
+                                                w-full pl-6 pr-3 py-1.5 rounded-lg
                                                 bg-bg-tertiary border border-border-subtle
-                                                text-sm font-mono text-text-primary
+                                                text-sm font-mono text-text-primary uppercase
                                                 focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary
                                             "
                                         />
                                     </div>
-                                    <div
-                                        className="w-9 h-9 rounded-lg border border-border-subtle"
-                                        style={{ backgroundColor: /^#[0-9A-F]{6}$/i.test(tempColor) ? tempColor : 'transparent' }}
-                                    />
                                 </div>
                             </div>
 
-                            {/* Presets */}
+                            {/* Hue Slider */}
                             <div>
-                                <label className="text-xs text-text-muted mb-1.5 block">Presets</label>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {presetColors.map((c) => (
-                                        <button
-                                            key={c}
-                                            onClick={() => setTempColor(c)}
-                                            className={`
-                                                w-8 h-8 rounded-full border border-transparent hover:scale-110 transition-transform
-                                                ${tempColor.toLowerCase() === c.toLowerCase() ? 'ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary' : ''}
-                                            `}
-                                            style={{ backgroundColor: c }}
-                                            title={c}
-                                        />
-                                    ))}
-                                </div>
+                                <label className="text-xs text-text-muted mb-2 block">Color Spectrum</label>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="360"
+                                    onChange={handleHueChange}
+                                    className="w-full h-3 rounded-lg appearance-none cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
+                                    }}
+                                />
                             </div>
 
                             {/* Actions */}
