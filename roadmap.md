@@ -174,7 +174,7 @@ Visualizing progress to build momentum.
 
 ---
 
-### 7. Recurring Tasks 🔄 (Mostly Complete)
+### 7. Recurring Tasks ✅
 Tasks that repeat on a schedule.
 
 **Requirements:**

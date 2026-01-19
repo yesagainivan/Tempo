@@ -199,10 +199,7 @@ const CompactCalendarDay = memo(function CompactCalendarDay({
                         // Calculate position on a circle
                         // Start from top (expiry usually 12 o'clock)
                         // Angle: -90 deg is top.
-                        // We divide 360 by MAX(12) or by count? 
-                        // If we want them to look like a clock, we should probably stick to 12 slots fixed positions?
-                        // Or distribute them evenly? Even distribution looks cleaner for small numbers.
-                        // Let's do even distribution.
+                        // Even distribution looks cleaner for small numbers.
 
                         const angleStep = 360 / count;
                         const angle = i * angleStep - 90; // -90 to start at top
@@ -219,11 +216,10 @@ const CompactCalendarDay = memo(function CompactCalendarDay({
                         const y = 50 + radius * Math.sin(radian);
 
                         return (
-                            <motion.div
+                            <div
                                 key={task.id}
                                 className={`
                                     absolute w-1 h-1 rounded-full
-                                    transition-colors duration-300
                                     ${task.completed
                                         ? (isSelected ? 'bg-white/80' : 'bg-success')
                                         : (isSelected ? 'bg-white/40' : 'bg-text-muted')
@@ -233,14 +229,6 @@ const CompactCalendarDay = memo(function CompactCalendarDay({
                                     left: `${x}%`,
                                     top: `${y}%`,
                                     transform: 'translate(-50%, -50%)',
-                                }}
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 300,
-                                    damping: 20,
-                                    delay: i * 0.02 // Stagger
                                 }}
                             />
                         );
