@@ -1,5 +1,8 @@
 # Tempo
 
+> [!IMPORTANT]
+> I recommend **NOT USING** Tempo for now; there are several flaws with rendering and syncing AND since its still in active development, Security concerns and Data loss are main issues we are working on! You can checkout the website, but I would recommend against logging in for now. Thank you for your understanding :)
+
 ![Tempo Banner](assets/Banner.webp)
 
 > **Time is the only folder.**
