@@ -1,4 +1,5 @@
 import {
+    format,
     addDays,
     addWeeks,
     addMonths,
@@ -287,6 +288,7 @@ function createVirtualInstance(template: Task, date: Date): Task {
         ...template,
         id: generateInstanceId(template.id, date),
         dueDate: startOfDay(date).getTime(),
+        dueDateLocal: format(date, 'yyyy-MM-dd'),
         completed: false,
         completedAt: undefined,
         recurringParentId: template.id,

@@ -10,7 +10,6 @@ import {
     isSameMonth,
     isToday,
     isSameDay,
-    startOfDay,
 } from 'date-fns';
 import { useTasksInRange } from '../../hooks/useTasks';
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
@@ -53,13 +52,12 @@ export const MonthCalendar = memo(function MonthCalendar({
     // Single query for the entire visible range instead of per-cell queries
     const tasks = useTasksInRange(calendarStart, calendarEnd);
 
-    // Group task counts by day
+    // Group task counts by day using timezone-agnostic date strings
     const taskCountByDay = useMemo(() => {
-        const map = new Map<number, number>();
+        const map = new Map<string, number>();
         tasks.forEach(task => {
             if (task.completed) return; // Only count pending tasks
-            const dayTs = startOfDay(new Date(task.dueDate)).getTime();
-            map.set(dayTs, (map.get(dayTs) || 0) + 1);
+            map.set(task.dueDateLocal, (map.get(task.dueDateLocal) || 0) + 1);
         });
         return map;
     }, [tasks]);
@@ -111,8 +109,8 @@ export const MonthCalendar = memo(function MonthCalendar({
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
                 {calendarDays.map((day, index) => {
-                    const dayTs = startOfDay(day).getTime();
-                    const taskCount = taskCountByDay.get(dayTs) || 0;
+                    const dayStr = format(day, 'yyyy-MM-dd');
+                    const taskCount = taskCountByDay.get(dayStr) || 0;
 
                     return (
                         <CalendarDay

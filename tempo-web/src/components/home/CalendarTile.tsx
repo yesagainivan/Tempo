@@ -10,7 +10,6 @@ import {
     isSameMonth,
     isToday,
     isSameDay,
-    startOfDay,
 } from 'date-fns';
 import { useTasksInRange } from '../../hooks/useTasks';
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
@@ -54,17 +53,15 @@ export const CalendarTile = memo(function CalendarTile({
     // 2. Fetch Tasks efficiently for the whole range
     const tasks = useTasksInRange(startRange, endRange);
 
-    // 3. Group tasks by day [timestamp -> tasks[]]
+    // 3. Group tasks by day [YYYY-MM-DD -> tasks[]]
     const tasksByDay = useMemo(() => {
-        const map = new Map<number, Task[]>();
+        const map = new Map<string, Task[]>();
         tasks.forEach(task => {
-            // We use due date to place it on the calendar
-            // Use startOfDay to normalize
-            const dayTs = startOfDay(new Date(task.dueDate)).getTime();
-            if (!map.has(dayTs)) {
-                map.set(dayTs, []);
+            const key = task.dueDateLocal;
+            if (!map.has(key)) {
+                map.set(key, []);
             }
-            map.get(dayTs)?.push(task);
+            map.get(key)?.push(task);
         });
         return map;
     }, [tasks]);
@@ -116,8 +113,8 @@ export const CalendarTile = memo(function CalendarTile({
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
                 {calendarDays.map((day) => {
-                    const dayTs = startOfDay(day).getTime();
-                    const dayTasks = tasksByDay.get(dayTs) || [];
+                    const dayStr = format(day, 'yyyy-MM-dd');
+                    const dayTasks = tasksByDay.get(dayStr) || [];
 
                     return (
                         <CompactCalendarDay
