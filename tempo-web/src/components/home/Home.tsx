@@ -33,6 +33,10 @@ export const Home = memo(function Home({ onSelectDate }: HomeProps) {
         onSelectDate(date);
     }, [onSelectDate]);
 
+    const handleViewToday = useCallback(() => {
+        handleSelectDate(new Date());
+    }, [handleSelectDate]);
+
     return (
         <motion.div
             className="w-full max-w-6xl mx-auto"
@@ -78,7 +82,7 @@ export const Home = memo(function Home({ onSelectDate }: HomeProps) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                     >
-                        <TodayTile onViewDay={() => handleSelectDate(new Date())} />
+                        <TodayTile onViewDay={handleViewToday} />
                     </motion.div>
 
                     <motion.div

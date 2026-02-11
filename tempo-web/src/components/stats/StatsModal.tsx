@@ -123,7 +123,14 @@ export const StatsModal = memo(function StatsModal({ isOpen, onClose }: StatsMod
     );
 });
 
-function StatBox({ label, value, suffix, icon }: any) {
+interface StatBoxProps {
+    label: string;
+    value: number;
+    suffix?: string;
+    icon: React.ReactNode;
+}
+
+function StatBox({ label, value, suffix, icon }: StatBoxProps) {
     return (
         <div className="p-3 rounded-xl bg-bg-primary/50 border border-white/5">
             <div className="flex items-center gap-2 mb-1 text-xs text-text-muted">

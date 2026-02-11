@@ -41,7 +41,25 @@ export interface Task {
 // HELPERS: MAPPERS
 // =================================================================
 
-export function rowToTask(row: any): Task {
+/** Shape of a row returned by PowerSync's SQLite queries for the tasks table */
+interface TaskRow {
+    id: string;
+    title: string;
+    type: string;
+    content: string | null;
+    due_date: number;
+    due_date_local: string;
+    completed: number;
+    completed_at: number | null;
+    created_at: number;
+    updated_at: number;
+    order_key: number;
+    recurrence: string | null;
+    recurring_parent_id: string | null;
+    is_recurring_instance: number;
+}
+
+export function rowToTask(row: TaskRow): Task {
     return {
         id: row.id,
         title: row.title,
@@ -50,18 +68,18 @@ export function rowToTask(row: any): Task {
         dueDate: row.due_date,
         dueDateLocal: row.due_date_local || '',
         completed: row.completed === 1,
-        completedAt: row.completed_at,
+        completedAt: row.completed_at ?? undefined,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         order: row.order_key,
         recurrence: row.recurrence ? JSON.parse(row.recurrence) : undefined,
-        recurringParentId: row.recurring_parent_id,
+        recurringParentId: row.recurring_parent_id ?? undefined,
         isRecurringInstance: row.is_recurring_instance === 1,
     };
 }
 
-function taskToRow(task: Partial<Task>): any {
-    const row: any = {};
+function taskToRow(task: Partial<Task>): Record<string, unknown> {
+    const row: Record<string, unknown> = {};
     if (task.id !== undefined) row.id = task.id;
     if (task.title !== undefined) row.title = task.title;
     if (task.type !== undefined) row.type = task.type;
@@ -131,7 +149,7 @@ export async function getTasksForDate(date: Date): Promise<Task[]> {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const result = await db.getAll(
+    const result = await db.getAll<TaskRow>(
         `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ? ORDER BY order_key ASC`,
         [startOfDay.getTime(), endOfDay.getTime()]
     );
@@ -143,7 +161,7 @@ export async function getTasksForDate(date: Date): Promise<Task[]> {
  * Get tasks in a date range (for timeline rendering)
  */
 export async function getTasksInRange(startDate: Date, endDate: Date): Promise<Task[]> {
-    const result = await db.getAll(
+    const result = await db.getAll<TaskRow>(
         `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
         [startDate.getTime(), endDate.getTime()]
     );
@@ -154,7 +172,7 @@ export async function getTasksInRange(startDate: Date, endDate: Date): Promise<T
  * Get a single task by ID
  */
 export async function getTask(taskId: string): Promise<Task | undefined> {
-    const row = await db.get(`SELECT * FROM tasks WHERE id = ?`, [taskId]);
+    const row = await db.get<TaskRow>(`SELECT * FROM tasks WHERE id = ?`, [taskId]);
     return row ? rowToTask(row) : undefined;
 }
 
@@ -162,7 +180,7 @@ export async function getTask(taskId: string): Promise<Task | undefined> {
  * Toggle task completion
  */
 export async function toggleTaskComplete(taskId: string): Promise<void> {
-    const row = await db.get<any>(`SELECT * FROM tasks WHERE id = ?`, [taskId]);
+    const row = await db.get<TaskRow>(`SELECT * FROM tasks WHERE id = ?`, [taskId]);
 
     if (row) {
         // Task exists in DB - simple toggle
@@ -185,7 +203,7 @@ export async function toggleTaskComplete(taskId: string): Promise<void> {
         const underscoreIndex = taskId.lastIndexOf('_');
         if (underscoreIndex > 0) {
             const parentId = taskId.slice(0, underscoreIndex);
-            const parentRow = await db.get<any>(`SELECT * FROM tasks WHERE id = ?`, [parentId]);
+            const parentRow = await db.get<TaskRow>(`SELECT * FROM tasks WHERE id = ?`, [parentId]);
 
             if (parentRow && parentRow.recurrence) {
                 const dateStr = taskId.slice(underscoreIndex + 1);

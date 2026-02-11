@@ -1,4 +1,4 @@
-import { useState, useCallback, memo, useEffect } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Recurrence, RecurrencePattern } from '../../lib/db';
 import { formatRecurrence } from '../../lib/db/recurrence';
@@ -8,6 +8,8 @@ import { DatePicker } from './DatePicker';
 // =================================================================
 // RECURRENCE PICKER - Elegant inline recurrence selector
 // =================================================================
+// NOTE: This is a controlled-via-key component. To reset state when
+// switching tasks, use <RecurrencePicker key={taskId} .../> in the parent.
 
 interface RecurrencePickerProps {
     value?: Recurrence;
@@ -43,25 +45,6 @@ export const RecurrencePicker = memo(function RecurrencePicker({
     const [endDate, setEndDate] = useState<string>(
         value?.endDate ? new Date(value.endDate).toISOString().split('T')[0] : ''
     );
-
-    // Sync internal state when value prop changes (e.g., when switching to edit parent)
-    useEffect(() => {
-        if (value) {
-            setIsExpanded(true);
-            setPattern(value.pattern);
-            setInterval(value.interval);
-            setDaysOfWeek(value.daysOfWeek || []);
-            setHasEndDate(!!value.endDate);
-            setEndDate(value.endDate ? new Date(value.endDate).toISOString().split('T')[0] : '');
-        } else {
-            setIsExpanded(false);
-            setPattern('daily');
-            setInterval(1);
-            setDaysOfWeek([]);
-            setHasEndDate(false);
-            setEndDate('');
-        }
-    }, [value]);
 
     const updateRecurrence = useCallback((updates: Partial<Recurrence> & { endDate?: number }) => {
         const newRecurrence: Recurrence = {

@@ -56,14 +56,3 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
         />
     );
 });
-
-// =================================================================
-// HOOK: useMarkdown - For simple markdown to HTML conversion
-// =================================================================
-
-import { useMemo } from 'react';
-import { processMarkdown } from '../../lib/markdown';
-
-export function useMarkdown(content: string): string {
-    return useMemo(() => processMarkdown(content), [content]);
-}

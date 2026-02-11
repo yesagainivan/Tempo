@@ -192,11 +192,10 @@ export function useTaskCountForDate(date: Date): number {
  * Get upcoming tasks for the next N days
  */
 export function useUpcomingTasks(days: number = 7): { date: Date; tasks: Task[] }[] {
-    const today = new Date();
-    const start = startOfDay(today);
-    // Start from tomorrow
-    const rangeStart = addDays(start, 1);
-    const rangeEnd = addDays(start, days);
+    const { rangeStart, rangeEnd } = useMemo(() => {
+        const start = startOfDay(new Date());
+        return { rangeStart: addDays(start, 1), rangeEnd: addDays(start, days) };
+    }, [days]);
 
     const tasksInRange = useTasksInRange(rangeStart, rangeEnd);
 

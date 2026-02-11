@@ -10,8 +10,9 @@ import {
     isSameMonth,
     isToday,
     isSameDay,
+    startOfDay,
 } from 'date-fns';
-import { useTaskCountForDate } from '../../hooks/useTasks';
+import { useTasksInRange } from '../../hooks/useTasks';
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
 
 // =================================================================
@@ -36,14 +37,32 @@ export const MonthCalendar = memo(function MonthCalendar({
     onNextMonth,
 }: MonthCalendarProps) {
     // Calculate all days to display (including days from prev/next month to fill grid)
-    const calendarDays = useMemo(() => {
+    const { calendarDays, calendarStart, calendarEnd } = useMemo(() => {
         const monthStart = startOfMonth(currentMonth);
         const monthEnd = endOfMonth(currentMonth);
-        const calendarStart = startOfWeek(monthStart);
-        const calendarEnd = endOfWeek(monthEnd);
+        const start = startOfWeek(monthStart);
+        const end = endOfWeek(monthEnd);
 
-        return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+        return {
+            calendarDays: eachDayOfInterval({ start, end }),
+            calendarStart: start,
+            calendarEnd: end,
+        };
     }, [currentMonth]);
+
+    // Single query for the entire visible range instead of per-cell queries
+    const tasks = useTasksInRange(calendarStart, calendarEnd);
+
+    // Group task counts by day
+    const taskCountByDay = useMemo(() => {
+        const map = new Map<number, number>();
+        tasks.forEach(task => {
+            if (task.completed) return; // Only count pending tasks
+            const dayTs = startOfDay(new Date(task.dueDate)).getTime();
+            map.set(dayTs, (map.get(dayTs) || 0) + 1);
+        });
+        return map;
+    }, [tasks]);
 
     return (
         <div className="w-full max-w-md mx-auto">
@@ -91,17 +110,23 @@ export const MonthCalendar = memo(function MonthCalendar({
 
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((day, index) => (
-                    <CalendarDay
-                        key={day.toISOString()}
-                        date={day}
-                        isCurrentMonth={isSameMonth(day, currentMonth)}
-                        isSelected={isSameDay(day, selectedDate)}
-                        isToday={isToday(day)}
-                        onClick={() => onSelectDate(day)}
-                        delay={index * 0.01}
-                    />
-                ))}
+                {calendarDays.map((day, index) => {
+                    const dayTs = startOfDay(day).getTime();
+                    const taskCount = taskCountByDay.get(dayTs) || 0;
+
+                    return (
+                        <CalendarDay
+                            key={day.toISOString()}
+                            date={day}
+                            taskCount={taskCount}
+                            isCurrentMonth={isSameMonth(day, currentMonth)}
+                            isSelected={isSameDay(day, selectedDate)}
+                            isToday={isToday(day)}
+                            onClick={() => onSelectDate(day)}
+                            delay={index * 0.01}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
@@ -113,6 +138,7 @@ export const MonthCalendar = memo(function MonthCalendar({
 
 interface CalendarDayProps {
     date: Date;
+    taskCount: number;
     isCurrentMonth: boolean;
     isSelected: boolean;
     isToday: boolean;
@@ -122,14 +148,13 @@ interface CalendarDayProps {
 
 const CalendarDay = memo(function CalendarDay({
     date,
+    taskCount,
     isCurrentMonth,
     isSelected,
     isToday,
     onClick,
     delay,
 }: CalendarDayProps) {
-    const taskCount = useTaskCountForDate(date);
-
     return (
         <motion.button
             onClick={onClick}
@@ -185,3 +210,4 @@ const CalendarDay = memo(function CalendarDay({
         </motion.button>
     );
 });
+

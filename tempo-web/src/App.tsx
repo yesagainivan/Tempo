@@ -35,7 +35,7 @@ function App() {
       setDbReady(true);
     };
     init();
-  }, []);
+  }, [initAuth]);
 
   // Connect PowerSync once after init - connector handles credentials dynamically
   useEffect(() => {

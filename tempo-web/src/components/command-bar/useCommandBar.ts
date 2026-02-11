@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@powersync/react';
 import { format } from 'date-fns';
-import { type Task, type TaskType, saveTask } from '../../lib/db';
+import { type Task, saveTask, rowToTask } from '../../lib/db';
+import type { Recurrence } from '../../lib/db';
 import { fuzzySearch } from '../../lib/search/fuzzySearch';
-import { parseTaskInput, formatParsedDate, type ParsedRecurrence } from '../../lib/nlp/dateParser';
+import { parseTaskInput, formatParsedDate } from '../../lib/nlp/dateParser';
 import { formatRecurrence } from '../../lib/db/recurrence';
 
 // =================================================================
@@ -17,7 +18,7 @@ export interface CommandState {
     parsedTitle?: string;
     parsedDate?: Date;
     parsedDateDisplay?: string;
-    parsedRecurrence?: ParsedRecurrence | null;
+    parsedRecurrence?: Recurrence;
 }
 
 export interface SearchResult {
@@ -31,29 +32,6 @@ interface UseCommandBarProps {
     onJumpToDate?: (date: Date) => void;
     onSelectTask?: (task: Task) => void;
     onClose: () => void;
-}
-
-// =================================================================
-// HELPER: Row Mapper
-// =================================================================
-
-function rowToTask(row: any): Task {
-    return {
-        id: row.id,
-        title: row.title,
-        type: row.type as TaskType,
-        content: row.content || '',
-        dueDate: row.due_date,
-        dueDateLocal: row.due_date_local || '',
-        completed: row.completed === 1,
-        completedAt: row.completed_at,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        order: row.order_key,
-        recurrence: row.recurrence ? JSON.parse(row.recurrence) : undefined,
-        recurringParentId: row.recurring_parent_id,
-        isRecurringInstance: row.is_recurring_instance === 1,
-    };
 }
 
 // =================================================================
@@ -93,7 +71,7 @@ export function useCommandBar({
             let parsedTitle: string;
             let parsedDate: Date | undefined;
             let parsedDateDisplay: string | undefined;
-            let parsedRecurrence: any;
+            let parsedRecurrence: Recurrence | undefined;
 
             if (delimiterIndex !== -1) {
                 // Explicit delimiter: "Buy milk > tomorrow"
@@ -132,7 +110,7 @@ export function useCommandBar({
             }
 
             // Build display with recurrence
-            let displayParts: string[] = [];
+            const displayParts: string[] = [];
             if (parsedDateDisplay) displayParts.push(parsedDateDisplay);
             if (parsedRecurrence) displayParts.push(formatRecurrence(parsedRecurrence));
 
@@ -191,10 +169,11 @@ export function useCommandBar({
         }));
     }, [input, tasks, commandState.mode]);
 
-    // Reset selection when results change
-    useEffect(() => {
-        setSelectedIndex(0);
-    }, [searchResults.length, commandState.mode]);
+    // Clamp selectedIndex to valid bounds during render (no effect needed).
+    // When results shrink, this ensures we never access out-of-bounds.
+    const clampedSelectedIndex = searchResults.length > 0
+        ? Math.min(selectedIndex, searchResults.length - 1)
+        : 0;
 
 
     // 4. Handlers
@@ -267,17 +246,14 @@ export function useCommandBar({
                 handleJumpToDate();
             } else if (commandState.mode === 'search') {
                 if (searchResults.length > 0) {
-                    handleSelectTask(searchResults[selectedIndex].task);
-                } else {
-                    // Enter on empty search -> maybe create?
-                    // For now do nothing
+                    handleSelectTask(searchResults[clampedSelectedIndex].task);
                 }
             }
         }
     }, [
         commandState.mode,
         searchResults,
-        selectedIndex,
+        clampedSelectedIndex,
         handleCreateTask,
         handleJumpToDate,
         handleSelectTask
@@ -288,7 +264,7 @@ export function useCommandBar({
         setInput,
         commandState,
         searchResults,
-        selectedIndex,
+        selectedIndex: clampedSelectedIndex,
         setSelectedIndex,
         handleKeyDown,
         handleCreateTask,

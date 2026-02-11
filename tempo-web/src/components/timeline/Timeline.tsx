@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion } from 'framer-motion';
 import { format, startOfDay, addDays } from 'date-fns';
@@ -21,19 +21,20 @@ const CENTER_INDEX = Math.floor(TOTAL_DAYS / 2);
 const INITIAL_SCROLL_OFFSET = CENTER_INDEX * ESTIMATED_ROW_HEIGHT;
 
 export function Timeline() {
+    'use no memo'; // Opt out: @tanstack/react-virtual is incompatible with React Compiler memoization
     const parentRef = useRef<HTMLDivElement>(null);
-    const [currentVisibleDate, setCurrentVisibleDate] = useState<Date>(() => new Date());
 
     // CRITICAL: Today is ALWAYS the center point, calculated once on mount
     const today = useMemo(() => startOfDay(new Date()), []);
 
     // Virtual list with dynamic sizing and initial offset
+    // eslint-disable-next-line react-hooks/incompatible-library -- opted out via 'use no memo' above
     const virtualizer = useVirtualizer({
         count: TOTAL_DAYS,
         getScrollElement: () => parentRef.current,
         estimateSize: () => ESTIMATED_ROW_HEIGHT,
         overscan: OVERSCAN,
-        initialOffset: INITIAL_SCROLL_OFFSET, // Start at today!
+        initialOffset: INITIAL_SCROLL_OFFSET,
     });
 
     // Convert virtual index to actual date
@@ -43,24 +44,20 @@ export function Timeline() {
         return addDays(today, dayOffset);
     }, [today]);
 
-    // Track visible date for header
-    useEffect(() => {
-        const items = virtualizer.getVirtualItems();
-        if (items.length > 0) {
-            const firstVisible = items[0];
-            const date = getDateForIndex(firstVisible.index);
-            setCurrentVisibleDate(date);
+    // Derive visible date from virtual items during render (no effect/state needed)
+    const virtualItems = virtualizer.getVirtualItems();
+    const currentVisibleDate = useMemo(() => {
+        if (virtualItems.length > 0) {
+            return getDateForIndex(virtualItems[0].index);
         }
-    }, [virtualizer.getVirtualItems(), getDateForIndex]);
+        return today;
+    }, [virtualItems, getDateForIndex, today]);
 
     // Jump to today
     const scrollToToday = useCallback(() => {
-        // Calculate scroll position for today (CENTER_INDEX)
         const scrollOffset = CENTER_INDEX * ESTIMATED_ROW_HEIGHT;
         parentRef.current?.scrollTo({ top: scrollOffset, behavior: 'smooth' });
     }, []);
-
-    const virtualItems = virtualizer.getVirtualItems();
 
     return (
         <div className="relative h-[calc(100vh-4rem)]">

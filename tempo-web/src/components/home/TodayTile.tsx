@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { useTasksForDate } from '../../hooks/useTasks';
@@ -13,7 +13,7 @@ interface TodayTileProps {
 }
 
 export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) {
-    const today = new Date();
+    const today = useMemo(() => new Date(), []);
     const tasks = useTasksForDate(today);
     const completedCount = tasks.filter(t => t.completed).length;
     const pendingTasks = tasks.filter(t => !t.completed);

@@ -1,6 +1,6 @@
 import { useQuery } from '@powersync/react';
-import { startOfDay, subDays, differenceInDays } from 'date-fns';
 import { useMemo } from 'react';
+import { startOfDay, subDays, differenceInDays } from 'date-fns';
 
 // =================================================================
 // STATS HOOK
@@ -29,7 +29,7 @@ export function useStats(): StatsData {
     `);
 
     const completedTimestamps = useMemo(
-        () => (completedRows || []).map((r: any) => r.completed_at as number),
+        () => (completedRows || []).map((r: { completed_at: number }) => r.completed_at),
         [completedRows]
     );
 
@@ -44,7 +44,7 @@ export function useStats(): StatsData {
     // However, storing dates as ISO strings or timestamps matters. We store timestamps (presumably ms).
     // A safe efficient way is to compute the cutoff timestamp in JS and query against it.
 
-    const now = new Date();
+    const now = useMemo(() => new Date(), []);
     const weekAgo = subDays(now, 7).getTime();
     const monthAgo = subDays(now, 30).getTime();
 
@@ -159,5 +159,5 @@ export function useStats(): StatsData {
             heatmap: activityMap
         };
 
-    }, [completedTimestamps, rates]);
+    }, [completedTimestamps, rates, now]);
 }

@@ -372,17 +372,18 @@ function tryParseDate(text: string, now: Date): ParsedDate | null {
         : text;
 
     // Try each parser
-    let result = parseRelative(textWithoutTime, now)
+    const result = parseRelative(textWithoutTime, now)
         || parseWeekday(textWithoutTime, now)
         || parseExplicit(textWithoutTime, now);
 
-    if (result && timeInfo) {
-        result.date = setHours(setMinutes(result.date, timeInfo.minutes), timeInfo.hours);
-        result.hasTime = true;
-        result.matched = text; // Include time in matched string
-    }
+    if (!result || !timeInfo) return result;
 
-    return result;
+    return {
+        ...result,
+        date: setHours(setMinutes(result.date, timeInfo.minutes), timeInfo.hours),
+        hasTime: true,
+        matched: text,
+    };
 }
 
 /**

@@ -86,7 +86,14 @@ export function Header({
     );
 }
 
-function NavButton({ isActive, onClick, icon: Icon, label }: { isActive: boolean; onClick: () => void; icon: any; label: string }) {
+interface NavButtonProps {
+    isActive: boolean;
+    onClick: () => void;
+    icon: React.ComponentType<{ size: number; className?: string }>;
+    label: string;
+}
+
+function NavButton({ isActive, onClick, icon: Icon, label }: NavButtonProps) {
     return (
         <button
             onClick={onClick}
