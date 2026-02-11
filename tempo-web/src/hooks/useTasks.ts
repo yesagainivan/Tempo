@@ -1,31 +1,9 @@
 import { useQuery } from '@powersync/react';
 import { format, startOfDay, endOfDay, addDays } from 'date-fns';
 import { generateRecurringInstances } from '../lib/db/recurrence';
-import { type Task, type TaskType } from '../lib/db';
+import { type Task, rowToTask } from '../lib/db';
 import { useMemo } from 'react';
 
-// =================================================================
-// HELPER: Row Mapper (Duplicate of db/index.ts for now logic)
-// =================================================================
-
-function rowToTask(row: any): Task {
-    return {
-        id: row.id,
-        title: row.title,
-        type: row.type as TaskType,
-        content: row.content || '',
-        dueDate: row.due_date,
-        dueDateLocal: row.due_date_local || '',
-        completed: row.completed === 1,
-        completedAt: row.completed_at,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        order: row.order_key,
-        recurrence: row.recurrence ? JSON.parse(row.recurrence) : undefined,
-        recurringParentId: row.recurring_parent_id,
-        isRecurringInstance: row.is_recurring_instance === 1,
-    };
-}
 
 // =================================================================
 // RECURRENCE MERGE LOGIC

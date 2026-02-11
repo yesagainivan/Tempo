@@ -41,7 +41,7 @@ export interface Task {
 // HELPERS: MAPPERS
 // =================================================================
 
-function rowToTask(row: any): Task {
+export function rowToTask(row: any): Task {
     return {
         id: row.id,
         title: row.title,
