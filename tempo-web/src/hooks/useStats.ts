@@ -1,4 +1,4 @@
-import { useQuery } from '@powersync/tanstack-react-query';
+import { useQuery } from '@powersync/react';
 import { startOfDay, subDays, differenceInDays } from 'date-fns';
 import { useMemo } from 'react';
 
@@ -21,17 +21,17 @@ export function useStats(): StatsData {
     // 1. Fetch Streak Data (Lightweight: just timestamps of completed tasks)
     // We strictly use completed_at for streaks.
     // Optimization: Only fetch `completed_at` column. sorting in SQL is fast.
-    const { data: completedTimestamps = [] } = useQuery({
-        queryKey: ['stats', 'timestamps'],
-        query: `
-            SELECT completed_at 
-            FROM tasks 
-            WHERE completed = 1 AND completed_at IS NOT NULL
-            ORDER BY completed_at DESC
-        `,
-        initialData: [],
-        select: (rows: any[]) => rows.map((r) => r.completed_at as number)
-    });
+    const { data: completedRows } = useQuery(`
+        SELECT completed_at 
+        FROM tasks 
+        WHERE completed = 1 AND completed_at IS NOT NULL
+        ORDER BY completed_at DESC
+    `);
+
+    const completedTimestamps = useMemo(
+        () => (completedRows || []).map((r: any) => r.completed_at as number),
+        [completedRows]
+    );
 
     // 2. Fetch Completion Rates (Aggregates)
     // We need Total Created vs Total Completed in the last 7/30 days.
@@ -48,30 +48,25 @@ export function useStats(): StatsData {
     const weekAgo = subDays(now, 7).getTime();
     const monthAgo = subDays(now, 30).getTime();
 
-    const { data: ratesData } = useQuery({
-        queryKey: ['stats', 'rates'],
-        query: `
-            SELECT 
-                SUM(CASE WHEN due_date >= ? THEN 1 ELSE 0 END) as weeklyTotal,
-                SUM(CASE WHEN completed = 1 AND completed_at >= ? THEN 1 ELSE 0 END) as weeklyDone,
-                SUM(CASE WHEN due_date >= ? THEN 1 ELSE 0 END) as monthlyTotal,
-                SUM(CASE WHEN completed = 1 AND completed_at >= ? THEN 1 ELSE 0 END) as monthlyDone
-            FROM tasks
-            WHERE deleted = 0
-        `,
-        parameters: [weekAgo, weekAgo, monthAgo, monthAgo],
-        select: (rows: any[]) => {
-            const r = rows[0];
-            return r || { weeklyTotal: 0, weeklyDone: 0, monthlyTotal: 0, monthlyDone: 0 };
-        }
-    });
+    const { data: ratesRows } = useQuery(
+        `SELECT 
+            SUM(CASE WHEN due_date >= ? THEN 1 ELSE 0 END) as weeklyTotal,
+            SUM(CASE WHEN completed = 1 AND completed_at >= ? THEN 1 ELSE 0 END) as weeklyDone,
+            SUM(CASE WHEN due_date >= ? THEN 1 ELSE 0 END) as monthlyTotal,
+            SUM(CASE WHEN completed = 1 AND completed_at >= ? THEN 1 ELSE 0 END) as monthlyDone
+        FROM tasks`,
+        [weekAgo, weekAgo, monthAgo, monthAgo]
+    );
 
-    const rates = (ratesData || { weeklyTotal: 0, weeklyDone: 0, monthlyTotal: 0, monthlyDone: 0 }) as {
-        weeklyTotal: number;
-        weeklyDone: number;
-        monthlyTotal: number;
-        monthlyDone: number;
-    };
+    const rates = useMemo(() => {
+        const r = (ratesRows || [])[0];
+        return (r || { weeklyTotal: 0, weeklyDone: 0, monthlyTotal: 0, monthlyDone: 0 }) as {
+            weeklyTotal: number;
+            weeklyDone: number;
+            monthlyTotal: number;
+            monthlyDone: number;
+        };
+    }, [ratesRows]);
 
 
     return useMemo(() => {

@@ -10,6 +10,7 @@ create table public.tasks (
   
   -- Timestamps stored as BigInt (Unix Epoch milliseconds) to match local schema
   due_date bigint,
+  due_date_local text,  -- NEW: YYYY-MM-DD string (timezone-agnostic)
   created_at bigint,
   updated_at bigint,
   completed_at bigint,
@@ -53,5 +54,6 @@ create publication powersync for table public.tasks;
 -- 5. Add Indexes for Performance
 -- These match the local SQLite indexes to ensure consistent performance
 create index if not exists tasks_due_date_idx on public.tasks(due_date);
+create index if not exists tasks_due_date_local_idx on public.tasks(due_date_local);
 create index if not exists tasks_completed_at_idx on public.tasks(completed_at);
 create index if not exists tasks_completed_idx on public.tasks(completed);

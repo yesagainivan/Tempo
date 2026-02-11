@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@powersync/react';
+import { format } from 'date-fns';
 import { type Task, type TaskType, saveTask } from '../../lib/db';
 import { fuzzySearch } from '../../lib/search/fuzzySearch';
 import { parseTaskInput, formatParsedDate, type ParsedRecurrence } from '../../lib/nlp/dateParser';
@@ -43,6 +44,7 @@ function rowToTask(row: any): Task {
         type: row.type as TaskType,
         content: row.content || '',
         dueDate: row.due_date,
+        dueDateLocal: row.due_date_local || '',
         completed: row.completed === 1,
         completedAt: row.completed_at,
         createdAt: row.created_at,
@@ -207,6 +209,7 @@ export function useCommandBar({
             type: 'quick',
             content: '',
             dueDate: date.getTime(),
+            dueDateLocal: format(date, 'yyyy-MM-dd'),
             completed: false,
             createdAt: Date.now(),
             updatedAt: Date.now(),

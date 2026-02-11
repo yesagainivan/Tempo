@@ -20,7 +20,7 @@ type ViewMode = 'home' | 'day';
 
 function App() {
   const { isCommandBarOpen, toggleCommandBar, closeCommandBar, setExpandedTaskId } = useAppStore();
-  const { initialize: initAuth, session } = useAuthStore();
+  const { initialize: initAuth } = useAuthStore();
   const [dbReady, setDbReady] = useState(false);
 
   // Auth Modal State (controlled by user action or first time?)
@@ -37,25 +37,12 @@ function App() {
     init();
   }, []);
 
-  // Re-connect PowerSync when session changes
+  // Connect PowerSync once after init - connector handles credentials dynamically
   useEffect(() => {
     if (dbReady) {
-      // If session exists, we ensure we are connected with credentials
-      // If session is null, we are in offline mode (or anonymous if allowed)
-      // db.connect calls are idempotent-ish, but let's be safe
-      if (session) {
-        db.connect(connector);
-      } else {
-        // Optional: db.disconnect() if we want to stop syncing immediately on logout
-        // But usually we want to keep local access. 
-        // SupabaseConnector returns null credentials, so PowerSync might handle it.
-        // Explicit disconnect might be cleaner for UI feedback ("Offline")
-        // db.disconnect(); 
-        // We'll leave it to maintain local functionality.
-        db.connect(connector); // Re-connect to update credentials (to null)
-      }
+      db.connect(connector);
     }
-  }, [session, dbReady]);
+  }, [dbReady]);
 
   // Navigation state
   const [viewMode, setViewMode] = useState<ViewMode>('home');
@@ -171,7 +158,7 @@ function App() {
 
         {/* Main Content Area */}
         <main className="pt-20 px-4 sm:px-6 pb-8">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
             {viewMode === 'home' ? (
               <motion.div
                 key="home"

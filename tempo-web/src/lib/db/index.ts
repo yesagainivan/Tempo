@@ -1,4 +1,5 @@
 import { db } from './powersync';
+import { format } from 'date-fns';
 export { db } from './powersync';
 
 // =================================================================
@@ -22,7 +23,8 @@ export interface Task {
     title: string;
     type: TaskType;
     content: string; // Markdown content for deep tasks, empty for quick
-    dueDate: number; // Unix timestamp
+    dueDate: number; // Unix timestamp (legacy)
+    dueDateLocal: string; // YYYY-MM-DD string (timezone-agnostic)
     completed: boolean;
     completedAt?: number;
     createdAt: number;
@@ -46,6 +48,7 @@ function rowToTask(row: any): Task {
         type: row.type as TaskType,
         content: row.content || '',
         dueDate: row.due_date,
+        dueDateLocal: row.due_date_local || '',
         completed: row.completed === 1,
         completedAt: row.completed_at,
         createdAt: row.created_at,
@@ -64,6 +67,7 @@ function taskToRow(task: Partial<Task>): any {
     if (task.type !== undefined) row.type = task.type;
     if (task.content !== undefined) row.content = task.content;
     if (task.dueDate !== undefined) row.due_date = task.dueDate;
+    if (task.dueDateLocal !== undefined) row.due_date_local = task.dueDateLocal;
     if (task.completed !== undefined) row.completed = task.completed ? 1 : 0;
     if (task.completedAt !== undefined) row.completed_at = task.completedAt;
     if (task.createdAt !== undefined) row.created_at = task.createdAt;
@@ -90,6 +94,7 @@ export function createQuickTask(title: string, dueDate: Date): Omit<Task, 'id'> 
         type: 'quick',
         content: '',
         dueDate: dueDate.getTime(),
+        dueDateLocal: format(dueDate, 'yyyy-MM-dd'),
         completed: false,
         createdAt: now,
         updatedAt: now,
@@ -104,6 +109,7 @@ export function createDeepTask(title: string, dueDate: Date, content = ''): Omit
         type: 'deep',
         content,
         dueDate: dueDate.getTime(),
+        dueDateLocal: format(dueDate, 'yyyy-MM-dd'),
         completed: false,
         createdAt: now,
         updatedAt: now,
@@ -269,10 +275,10 @@ export async function updateTask(
 export async function saveTask(task: Task) {
     const row = taskToRow(task);
     await db.execute(
-        `INSERT INTO tasks (id, title, type, content, due_date, completed, completed_at, created_at, updated_at, order_key, recurrence, recurring_parent_id, is_recurring_instance)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO tasks (id, title, type, content, due_date, due_date_local, completed, completed_at, created_at, updated_at, order_key, recurrence, recurring_parent_id, is_recurring_instance)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-            row.id, row.title, row.type, row.content, row.due_date, row.completed, row.completed_at,
+            row.id, row.title, row.type, row.content, row.due_date, row.due_date_local, row.completed, row.completed_at,
             row.created_at, row.updated_at, row.order_key, row.recurrence, row.recurring_parent_id, row.is_recurring_instance
         ]
     );

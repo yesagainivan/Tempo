@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { format } from 'date-fns';
 import { generateId, saveTask, deleteTask, updateTask, type Task, type TaskType } from '../lib/db';
 
 // =================================================================
@@ -65,6 +66,7 @@ export async function addTask(
         type,
         content,
         dueDate: dueDate.getTime(),
+        dueDateLocal: format(dueDate, 'yyyy-MM-dd'),
         completed: false,
         createdAt: now,
         updatedAt: now,

@@ -7,7 +7,8 @@ export const AppSchema = new Schema({
         title: column.text,
         type: column.text,          // 'quick' | 'deep'
         content: column.text,
-        due_date: column.integer,   // unix timestamp
+        due_date: column.integer,   // unix timestamp (legacy, kept for backward compatibility)
+        due_date_local: column.text, // NEW: YYYY-MM-DD string (timezone-agnostic)
         completed: column.integer,  // boolean as 0/1
         completed_at: column.integer,
         created_at: column.integer,
@@ -21,6 +22,7 @@ export const AppSchema = new Schema({
     }, {
         indexes: {
             due_date: ['due_date'],
+            due_date_local: ['due_date_local'],  // NEW: Index for date queries
             completed_at: ['completed_at'],
             completed: ['completed'],
             // Performance: Index recurrence to prevent full table scans on Home tab

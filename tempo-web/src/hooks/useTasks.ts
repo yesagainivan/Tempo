@@ -1,5 +1,5 @@
-import { useQuery } from '@powersync/tanstack-react-query';
-import { startOfDay, endOfDay, addDays } from 'date-fns';
+import { useQuery } from '@powersync/react';
+import { format, startOfDay, endOfDay, addDays } from 'date-fns';
 import { generateRecurringInstances } from '../lib/db/recurrence';
 import { type Task, type TaskType } from '../lib/db';
 import { useMemo } from 'react';
@@ -15,6 +15,7 @@ function rowToTask(row: any): Task {
         type: row.type as TaskType,
         content: row.content || '',
         dueDate: row.due_date,
+        dueDateLocal: row.due_date_local || '',
         completed: row.completed === 1,
         completedAt: row.completed_at,
         createdAt: row.created_at,
@@ -67,23 +68,22 @@ function mergeTasksWithRecurrence(
  * Get all tasks for a specific date (reactive) - includes recurring instances
  */
 export function useTasksForDate(date: Date): Task[] {
+    // Use YYYY-MM-DD format for timezone-agnostic queries
+    const dateStr = format(date, 'yyyy-MM-dd');
+    // Keep timestamps for recurrence calculations
     const dayStart = startOfDay(date).getTime();
     const dayEnd = endOfDay(date).getTime();
 
-    // 1. Get standard tasks for the day
-    const { data: rangeRows = [] } = useQuery({
-        queryKey: ['tasks', 'date', dayStart, dayEnd],
-        query: `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
-        parameters: [dayStart, dayEnd],
-        initialData: []
-    });
+    // 1. Get standard tasks for the day using date string
+    const { data: rangeRows } = useQuery(
+        `SELECT * FROM tasks WHERE due_date_local = ?`,
+        [dateStr]
+    );
 
     // 2. Get recurring templates (to generate virtuals)
-    const { data: templateRows = [] } = useQuery({
-        queryKey: ['tasks', 'templates'],
-        query: `SELECT * FROM tasks WHERE recurrence IS NOT NULL`,
-        initialData: []
-    });
+    const { data: templateRows } = useQuery(
+        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
+    );
 
     // 3. Get completed instance IDs (to exclude virtuals that are done)
     // Note: We need completed instances that might NOT be in the range query if they are virtuals persisted?
@@ -95,17 +95,19 @@ export function useTasksForDate(date: Date): Task[] {
 
     const tasks = useMemo(() => {
         // Optimization: Quick return if no data
-        if (rangeRows.length === 0 && templateRows.length === 0) return [];
+        const rows = rangeRows || [];
+        const templates = templateRows || [];
+        if (rows.length === 0 && templates.length === 0) return [];
 
-        const rangeTasks = rangeRows.map(rowToTask);
-        const templates = templateRows.map(rowToTask);
+        const rangeTasks = rows.map(rowToTask);
+        const templateTasks = templates.map(rowToTask);
 
         // Filter templates: exclude generated instances from templates list if any leak in
         // AND pre-filter templates that definitely don't overlap with the day
         const dayStartInstance = new Date(dayStart);
         const dayEndInstance = new Date(dayEnd);
 
-        const cleanTemplates = templates.filter(t => {
+        const cleanTemplates = templateTasks.filter(t => {
             if (t.isRecurringInstance) return false;
             // Creation date check (start date)
             if (t.dueDate > dayEnd) return false;
@@ -132,33 +134,35 @@ export function useTasksForDate(date: Date): Task[] {
  * Get all tasks in a date range (reactive)
  */
 export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
+    // Use YYYY-MM-DD format for timezone-agnostic queries
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
+    // Keep timestamps for recurrence calculations
     const startTs = startDate.getTime();
     const endTs = endDate.getTime();
 
-    const { data: rangeRows = [] } = useQuery({
-        queryKey: ['tasks', 'range', startTs, endTs],
-        query: `SELECT * FROM tasks WHERE due_date BETWEEN ? AND ?`,
-        parameters: [startTs, endTs],
-        initialData: []
-    });
+    const { data: rangeRows } = useQuery(
+        `SELECT * FROM tasks WHERE due_date_local BETWEEN ? AND ?`,
+        [startStr, endStr]
+    );
 
-    const { data: templateRows = [] } = useQuery({
-        queryKey: ['tasks', 'templates'],
-        query: `SELECT * FROM tasks WHERE recurrence IS NOT NULL`,
-        initialData: []
-    });
+    const { data: templateRows } = useQuery(
+        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
+    );
 
     const tasks = useMemo(() => {
         // Optimization: Quick return
-        if (rangeRows.length === 0 && templateRows.length === 0) return [];
+        const rows = rangeRows || [];
+        const templates = templateRows || [];
+        if (rows.length === 0 && templates.length === 0) return [];
 
-        const rangeTasks = rangeRows.map(rowToTask);
+        const rangeTasks = rows.map(rowToTask);
 
         // Date objects for range
         const rangeStartDate = new Date(startTs);
         const rangeEndDate = new Date(endTs);
 
-        const templates = templateRows.map(rowToTask).filter(t => {
+        const cleanTemplates = templates.map(rowToTask).filter(t => {
             if (t.isRecurringInstance) return false;
             // Creation date check
             if (t.dueDate > endTs) return false;
@@ -169,7 +173,7 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
 
         return mergeTasksWithRecurrence(
             rangeTasks,
-            templates,
+            cleanTemplates,
             new Set(),
             rangeStartDate,
             rangeEndDate
@@ -183,13 +187,10 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
  * Get a single task by ID (reactive)
  */
 export function useTask(taskId: string | null): Task | undefined {
-    const { data } = useQuery({
-        queryKey: ['tasks', 'detail', taskId],
-        query: `SELECT * FROM tasks WHERE id = ?`,
-        parameters: taskId ? [taskId] : [],
-        enabled: !!taskId,
-        initialData: []
-    });
+    const { data } = useQuery(
+        `SELECT * FROM tasks WHERE id = ?`,
+        taskId ? [taskId] : []
+    );
 
     const task = useMemo(() => {
         if (!data || data.length === 0) return undefined;

@@ -18,22 +18,40 @@ export const supabase = createClient(
 
 export class SupabaseConnector implements PowerSyncBackendConnector {
     readonly client: SupabaseClient;
+    private cachedToken: string | null = null;
+    private cachedUserId: string | null = null;
 
     constructor(client: SupabaseClient) {
         this.client = client;
+
+        // Initialize cached token from current session
+        this.client.auth.getSession().then(({ data: { session } }) => {
+            this.cachedToken = session?.access_token ?? null;
+            this.cachedUserId = session?.user.id ?? null;
+        });
+
+        // Subscribe to auth state changes to keep cache updated
+        this.client.auth.onAuthStateChange((_event, session) => {
+            this.cachedToken = session?.access_token ?? null;
+            this.cachedUserId = session?.user.id ?? null;
+        });
     }
 
     async fetchCredentials() {
-        const { data: { session }, error } = await this.client.auth.getSession();
-
-        if (!session || error) {
+        // Use cached token - no async getSession() call needed
+        if (!this.cachedToken) {
             return null;
         }
 
         return {
             endpoint: import.meta.env.VITE_POWERSYNC_URL,
-            token: session.access_token,
+            token: this.cachedToken,
         };
+    }
+
+    // Helper to get cached user ID for uploads
+    getUserId(): string | null {
+        return this.cachedUserId;
     }
 
     async uploadData(database: AbstractPowerSyncDatabase): Promise<void> {
@@ -50,8 +68,7 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
 
                 // Map Supabase REST API calls
                 if (op.op === 'PUT') {
-                    const session = await this.client.auth.getSession();
-                    const user_id = session.data.session?.user.id;
+                    const user_id = this.getUserId();
 
                     // Explicitly inject user_id to ensure RLS/Not-Null constraints are satisfied
                     const data = { ...op.opData, id, user_id };
@@ -92,5 +109,5 @@ export const db = new PowerSyncDatabase({
 
 export const setupPowerSync = async () => {
     await db.init();
-    await db.connect(connector);
+    // Note: db.connect() is called separately in App.tsx after auth is ready
 };
