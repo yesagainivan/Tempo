@@ -124,7 +124,7 @@ export const CalendarTile = memo(function CalendarTile({
                             isCurrentMonth={isSameMonth(day, currentMonth)}
                             isSelected={isSameDay(day, selectedDate)}
                             isToday={isToday(day)}
-                            onClick={() => onSelectDate(day)}
+                            onSelect={onSelectDate}
                         />
                     );
                 })}
@@ -143,7 +143,7 @@ interface CompactCalendarDayProps {
     isCurrentMonth: boolean;
     isSelected: boolean;
     isToday: boolean;
-    onClick: () => void;
+    onSelect: (date: Date) => void;
 }
 
 const CompactCalendarDay = memo(function CompactCalendarDay({
@@ -152,7 +152,7 @@ const CompactCalendarDay = memo(function CompactCalendarDay({
     isCurrentMonth,
     isSelected,
     isToday,
-    onClick,
+    onSelect,
 }: CompactCalendarDayProps) {
     // Limit to 12 tasks for the "clock" visualization
     const displayTasks = useMemo(() => {
@@ -164,7 +164,7 @@ const CompactCalendarDay = memo(function CompactCalendarDay({
 
     return (
         <motion.button
-            onClick={onClick}
+            onClick={() => onSelect(date)}
             className={`
         relative aspect-square p-0.5
         flex flex-col items-center justify-center
