@@ -18,32 +18,21 @@ export interface StatsData {
 }
 
 export function useStats(): StatsData {
-    // 1. Fetch Streak Data (Lightweight: just timestamps of completed tasks)
-    // We strictly use completed_at for streaks.
-    // Optimization: Only fetch `completed_at` column. sorting in SQL is fast.
-    const { data: completedRows } = useQuery(`
-        SELECT completed_at 
+    // 1. Fetch Aggregated Stats directly from SQL
+    // completed_at is stored as a timestamp (ms)
+    // We group by day to build the heatmap efficiently
+    // date(completed_at / 1000, 'unixepoch') gives YYYY-MM-DD
+    const { data: dailyCounts } = useQuery(`
+        SELECT 
+            date(completed_at / 1000, 'unixepoch', 'localtime') as day,
+            count(*) as count 
         FROM tasks 
         WHERE completed = 1 AND completed_at IS NOT NULL
-        ORDER BY completed_at DESC
+        GROUP BY day
+        ORDER BY day DESC
     `);
 
-    const completedTimestamps = useMemo(
-        () => (completedRows || []).map((r: { completed_at: number }) => r.completed_at),
-        [completedRows]
-    );
-
     // 2. Fetch Completion Rates (Aggregates)
-    // We need Total Created vs Total Completed in the last 7/30 days.
-    // Note: This approximates "Total Created" using `created_at` or `due_date`?
-    // "Completion Rate" usually implies: Of the tasks expected to be done this week, how many did you do?
-    // Let's use `due_date` for the "denominator" (Planned) and `completed_at` for "numerator" (Effort).
-    // Or simpler: Total tasks that exist vs Total tasks completed.
-
-    // SQLite doesn't have great date functions in all versions, but PowerSync's usually supports strftime.
-    // However, storing dates as ISO strings or timestamps matters. We store timestamps (presumably ms).
-    // A safe efficient way is to compute the cutoff timestamp in JS and query against it.
-
     const now = useMemo(() => new Date(), []);
     const weekAgo = subDays(now, 7).getTime();
     const monthAgo = subDays(now, 30).getTime();
@@ -72,43 +61,55 @@ export function useStats(): StatsData {
     return useMemo(() => {
         const today = startOfDay(now);
 
-        // --- Heatmap Data ---
-        // We can build this from the timestamps array efficiently
+        // --- Heatmap Data & Streak Calculation ---
         const activityMap = new Map<string, number>();
         const uniqueDayTimestamps: number[] = [];
+        let totalCompleted = 0;
 
-        completedTimestamps.forEach((ts) => {
-            const date = new Date(ts);
-            const dateStr = date.toISOString().split('T')[0];
-            const dayStart = startOfDay(date).getTime();
+        // Process SQL results (already aggregated by day)
+        // dailyCounts is [{ day: '2023-01-01', count: 5 }, ...]
+        if (dailyCounts) {
+            dailyCounts.forEach((row: { day: string; count: number }) => {
+                const count = row.count;
+                const dayStr = row.day;
 
-            activityMap.set(dateStr, (activityMap.get(dateStr) || 0) + 1);
+                activityMap.set(dayStr, count);
+                totalCompleted += count;
 
-            // Dedup days for streak calc only (already sorted DESC)
-            // Since completedTimestamps is sorted DESC, we only add if it's a new day.
-            if (uniqueDayTimestamps.length === 0 || uniqueDayTimestamps[uniqueDayTimestamps.length - 1] !== dayStart) {
-                uniqueDayTimestamps.push(dayStart);
-            }
-        });
+                // row.day is YYYY-MM-DD
+                // const date = new Date(dayStr); // Unused
 
+                // Adjust for timezone potentially? 
+                // 'localtime' in SQL might help matching local date
+                // But new Date(YYYY-MM-DD) is UTC usually. 
+                // Let's ensure consistency.
+                // If SQL returned '2025-02-11', new Date('2025-02-11') is UTC.
+                // But we want local start of day for differenceInDays.
+                // Actually, simplest is to just parse YYYY, MM, DD and make local date.
+                const [y, m, d] = dayStr.split('-').map(Number);
+                const localDate = new Date(y, m - 1, d);
 
-        // --- Streak Calculation (O(N) on Days) ---
-        // Since we have deduped, sorted timestamps, this loop is extremely efficient (N = number of active days).
+                uniqueDayTimestamps.push(localDate.getTime());
+            });
+        }
+
+        // --- Streak Calculation (O(N) on Active Days) ---
         let currentStreak = 0;
         let longestStreak = 0;
 
         if (uniqueDayTimestamps.length > 0) {
-            // Check if active today or ended yesterday
-            const mostRecent = uniqueDayTimestamps[0];
-            const diff = differenceInDays(today, mostRecent);
+            // Check if active today or yesterday
+            // uniqueDayTimestamps are sorted DESC by query
+            const mostRecentTs = uniqueDayTimestamps[0];
+            const mostRecentDate = new Date(mostRecentTs);
+            const diff = differenceInDays(today, mostRecentDate);
 
-            // Streak is alive if most recent was Today (0) or Yesterday (1)
             if (diff <= 1) {
                 currentStreak = 1;
-                let prevDate = mostRecent;
+                let prevDate = mostRecentDate;
 
                 for (let i = 1; i < uniqueDayTimestamps.length; i++) {
-                    const currentDate = uniqueDayTimestamps[i];
+                    const currentDate = new Date(uniqueDayTimestamps[i]);
                     const dayDiff = differenceInDays(prevDate, currentDate);
 
                     if (dayDiff === 1) {
@@ -122,12 +123,12 @@ export function useStats(): StatsData {
 
             // Longest Streak
             let tempStreak = 1;
-            // If there's only one unique day, longest streak is 1.
-            // The loop below correctly handles this if uniqueDayTimestamps.length > 0.
             if (uniqueDayTimestamps.length > 0) {
-                let prevDate = uniqueDayTimestamps[0];
+                let prevDate = new Date(uniqueDayTimestamps[0]);
+                longestStreak = 1; // At least 1 if we have data
+
                 for (let i = 1; i < uniqueDayTimestamps.length; i++) {
-                    const currentDate = uniqueDayTimestamps[i];
+                    const currentDate = new Date(uniqueDayTimestamps[i]);
                     const dayDiff = differenceInDays(prevDate, currentDate);
 
                     if (dayDiff === 1) {
@@ -151,7 +152,7 @@ export function useStats(): StatsData {
         return {
             currentStreak,
             longestStreak,
-            totalCompleted: completedTimestamps.length,
+            totalCompleted,
             completionRate: {
                 weekly: calcRate(rates.weeklyDone, rates.weeklyTotal),
                 monthly: calcRate(rates.monthlyDone, rates.monthlyTotal)
@@ -159,5 +160,5 @@ export function useStats(): StatsData {
             heatmap: activityMap
         };
 
-    }, [completedTimestamps, rates, now]);
+    }, [dailyCounts, rates, now]);
 }

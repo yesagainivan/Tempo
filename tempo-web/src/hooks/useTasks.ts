@@ -3,6 +3,7 @@ import { format, startOfDay, endOfDay, addDays } from 'date-fns';
 import { generateRecurringInstances } from '../lib/db/recurrence';
 import { type Task, rowToTask } from '../lib/db';
 import { useMemo } from 'react';
+import { useTaskContext } from './useTaskContext';
 
 
 // =================================================================
@@ -58,10 +59,8 @@ export function useTasksForDate(date: Date): Task[] {
         [dateStr]
     );
 
-    // 2. Get recurring templates (to generate virtuals)
-    const { data: templateRows } = useQuery(
-        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
-    );
+    // 2. Get recurring templates from Context (Single Source of Truth)
+    const { recurrenceTemplates } = useTaskContext();
 
     // 3. Get completed instance IDs (to exclude virtuals that are done)
     // Note: We need completed instances that might NOT be in the range query if they are virtuals persisted?
@@ -74,18 +73,16 @@ export function useTasksForDate(date: Date): Task[] {
     const tasks = useMemo(() => {
         // Optimization: Quick return if no data
         const rows = rangeRows || [];
-        const templates = templateRows || [];
-        if (rows.length === 0 && templates.length === 0) return [];
+        if (rows.length === 0 && recurrenceTemplates.length === 0) return [];
 
         const rangeTasks = rows.map(rowToTask);
-        const templateTasks = templates.map(rowToTask);
 
         // Filter templates: exclude generated instances from templates list if any leak in
         // AND pre-filter templates that definitely don't overlap with the day
         const dayStartInstance = new Date(dayStart);
         const dayEndInstance = new Date(dayEnd);
 
-        const cleanTemplates = templateTasks.filter(t => {
+        const cleanTemplates = recurrenceTemplates.filter(t => {
             if (t.isRecurringInstance) return false;
             // Creation date check (start date)
             if (t.dueDate > dayEnd) return false;
@@ -103,7 +100,7 @@ export function useTasksForDate(date: Date): Task[] {
         );
 
         return merged.sort((a, b) => a.order - b.order);
-    }, [rangeRows, templateRows, dayStart, dayEnd]);
+    }, [rangeRows, recurrenceTemplates, dayStart, dayEnd]);
 
     return tasks;
 }
@@ -124,15 +121,12 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
         [startStr, endStr]
     );
 
-    const { data: templateRows } = useQuery(
-        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
-    );
+    const { recurrenceTemplates } = useTaskContext();
 
     const tasks = useMemo(() => {
         // Optimization: Quick return
         const rows = rangeRows || [];
-        const templates = templateRows || [];
-        if (rows.length === 0 && templates.length === 0) return [];
+        if (rows.length === 0 && recurrenceTemplates.length === 0) return [];
 
         const rangeTasks = rows.map(rowToTask);
 
@@ -140,7 +134,7 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
         const rangeStartDate = new Date(startTs);
         const rangeEndDate = new Date(endTs);
 
-        const cleanTemplates = templates.map(rowToTask).filter(t => {
+        const cleanTemplates = recurrenceTemplates.filter(t => {
             if (t.isRecurringInstance) return false;
             // Creation date check
             if (t.dueDate > endTs) return false;
@@ -156,7 +150,7 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
             rangeStartDate,
             rangeEndDate
         );
-    }, [rangeRows, templateRows, startTs, endTs]);
+    }, [rangeRows, recurrenceTemplates, startTs, endTs]);
 
     return tasks;
 }

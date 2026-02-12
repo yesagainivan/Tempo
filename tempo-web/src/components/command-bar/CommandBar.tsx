@@ -139,12 +139,13 @@ export function CommandBar({
                                 {commandState.mode === 'search' && (
                                     <>
                                         {/* Empty state with hints */}
-                                        {!input && (
+                                        {/* Empty state with hints */}
+                                        {(!input || input.trim() === '/') && (
                                             <CommandHints />
                                         )}
 
                                         {/* Search results */}
-                                        {input && searchResults.length > 0 && (
+                                        {input && input.trim() !== '/' && searchResults.length > 0 && (
                                             <Command.Group heading="Tasks">
                                                 {searchResults.map((result, index) => (
                                                     <Command.Item
@@ -176,7 +177,7 @@ export function CommandBar({
                                         )}
 
                                         {/* No results */}
-                                        {input && searchResults.length === 0 && (
+                                        {input && input.trim() !== '/' && searchResults.length === 0 && (
                                             <Command.Empty className="command-empty">
                                                 No tasks found for "{input}"
                                             </Command.Empty>

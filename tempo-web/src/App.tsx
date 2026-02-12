@@ -11,6 +11,7 @@ import { PowerSyncContext } from '@powersync/react';
 import { db, setupPowerSync, connector } from './lib/db/powersync';
 import { useAuthStore } from './stores/authStore';
 import { AuthModal } from './components/auth/AuthModal';
+import { TaskProvider } from './contexts/TaskProvider';
 
 // =================================================================
 // TEMPO APP SHELL - Home Dashboard First
@@ -145,73 +146,75 @@ function App() {
 
   return (
     <PowerSyncContext.Provider value={db}>
-      <div className="min-h-screen bg-bg-primary text-text-primary">
-        {/* Header */}
-        {/* Header */}
-        <Header
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          onHomeClick={handleBackToHome}
-          toggleCommandBar={toggleCommandBar}
-          openSettings={() => setIsSettingsOpen(true)}
-        />
+      <TaskProvider>
+        <div className="min-h-screen bg-bg-primary text-text-primary">
+          {/* Header */}
+          {/* Header */}
+          <Header
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onHomeClick={handleBackToHome}
+            toggleCommandBar={toggleCommandBar}
+            openSettings={() => setIsSettingsOpen(true)}
+          />
 
-        {/* Main Content Area */}
-        <main className="pt-20 px-4 sm:px-6 pb-8">
-          <AnimatePresence mode="popLayout">
-            {viewMode === 'home' ? (
-              <motion.div
-                key="home"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="pt-4"
-              >
-                <Home onSelectDate={handleSelectDate} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="day"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.2 }}
-                className="pt-4"
-              >
-                <DayAgenda
-                  date={selectedDate}
-                  onDateChange={handleDateChange}
-                  onBackToCalendar={handleBackToHome}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </main>
+          {/* Main Content Area */}
+          <main className="pt-20 px-4 sm:px-6 pb-8">
+            <AnimatePresence mode="wait">
+              {viewMode === 'home' ? (
+                <motion.div
+                  key="home"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                  className="pt-4"
+                >
+                  <Home onSelectDate={handleSelectDate} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="day"
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.2 }}
+                  className="pt-4"
+                >
+                  <DayAgenda
+                    date={selectedDate}
+                    onDateChange={handleDateChange}
+                    onBackToCalendar={handleBackToHome}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </main>
 
-        {/* Command Bar */}
-        <CommandBar
-          isOpen={isCommandBarOpen}
-          onClose={closeCommandBar}
-          onCreateTask={handleCreateTask}
-          onJumpToDate={handleJumpToDate}
-          onSelectTask={handleSelectTask}
-        />
+          {/* Command Bar */}
+          <CommandBar
+            isOpen={isCommandBarOpen}
+            onClose={closeCommandBar}
+            onCreateTask={handleCreateTask}
+            onJumpToDate={handleJumpToDate}
+            onSelectTask={handleSelectTask}
+          />
 
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          onOpenAuth={() => {
-            setIsSettingsOpen(false);
-            setIsAuthModalOpen(true);
-          }}
-        />
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            onOpenAuth={() => {
+              setIsSettingsOpen(false);
+              setIsAuthModalOpen(true);
+            }}
+          />
 
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-        />
-      </div>
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+          />
+        </div>
+      </TaskProvider>
     </PowerSyncContext.Provider>
   );
 }
