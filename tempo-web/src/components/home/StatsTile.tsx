@@ -71,7 +71,7 @@ export const StatsTile = memo(function StatsTile({ onClick }: StatsTileProps) {
                             {completionRate.weekly}%
                         </span>
                         <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
-                            Weekly Completion Rate
+                            Schedule Adherence
                         </span>
                     </div>
 

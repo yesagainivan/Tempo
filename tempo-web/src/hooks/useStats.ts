@@ -40,20 +40,21 @@ export function useStats(): StatsData {
     const { data: ratesRows } = useQuery(
         `SELECT 
             SUM(CASE WHEN due_date >= ? THEN 1 ELSE 0 END) as weeklyTotal,
-            SUM(CASE WHEN completed = 1 AND completed_at >= ? THEN 1 ELSE 0 END) as weeklyDone,
+            SUM(CASE WHEN due_date >= ? AND completed = 1 THEN 1 ELSE 0 END) as weeklyDone,
             SUM(CASE WHEN due_date >= ? THEN 1 ELSE 0 END) as monthlyTotal,
-            SUM(CASE WHEN completed = 1 AND completed_at >= ? THEN 1 ELSE 0 END) as monthlyDone
+            SUM(CASE WHEN due_date >= ? AND completed = 1 THEN 1 ELSE 0 END) as monthlyDone
         FROM tasks`,
         [weekAgo, weekAgo, monthAgo, monthAgo]
     );
 
     const rates = useMemo(() => {
         const r = (ratesRows || [])[0];
-        return (r || { weeklyTotal: 0, weeklyDone: 0, monthlyTotal: 0, monthlyDone: 0 }) as {
-            weeklyTotal: number;
-            weeklyDone: number;
-            monthlyTotal: number;
-            monthlyDone: number;
+        // SQL SUM() returns NULL if no rows match, so we must default to 0
+        return {
+            weeklyTotal: r?.weeklyTotal ?? 0,
+            weeklyDone: r?.weeklyDone ?? 0,
+            monthlyTotal: r?.monthlyTotal ?? 0,
+            monthlyDone: r?.monthlyDone ?? 0
         };
     }, [ratesRows]);
 
