@@ -6,6 +6,7 @@ import { updateTask, rescheduleTask, getTask } from '../../lib/db';
 import { Button } from './Button';
 import { Input } from './Input';
 import { DatePicker } from './DatePicker';
+import { TimePicker } from './TimePicker';
 import { RecurrencePicker } from './RecurrencePicker';
 import { RepeatIcon } from '../icons';
 
@@ -22,6 +23,7 @@ interface TaskEditModalProps {
 export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
     const [title, setTitle] = useState('');
     const [dueDate, setDueDate] = useState('');
+    const [time, setTime] = useState('');
     const [recurrence, setRecurrence] = useState<Recurrence | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -38,6 +40,16 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
             setTitle(editingTask.title);
             const date = new Date(editingTask.dueDate);
             setDueDate(date.toISOString().split('T')[0]);
+
+            // Extract time (HH:mm)
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            if (hours === 0 && minutes === 0) {
+                setTime('');
+            } else {
+                setTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+            }
+
             setRecurrence(editingTask.recurrence);
         }
     }, [editingTask]);
@@ -89,9 +101,17 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
 
             const [year, month, day] = dueDate.split('-').map(Number);
             const newDate = new Date(year, month - 1, day);
+
+            if (time) {
+                const [h, m] = time.split(':').map(Number);
+                newDate.setHours(h, m, 0, 0);
+            } else {
+                newDate.setHours(0, 0, 0, 0);
+            }
+
             const oldDate = new Date(editingTask.dueDate);
 
-            if (newDate.toDateString() !== oldDate.toDateString()) {
+            if (newDate.getTime() !== oldDate.getTime()) {
                 await rescheduleTask(editingTask.id, newDate);
             }
 
@@ -99,7 +119,7 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
         } finally {
             setIsSaving(false);
         }
-    }, [editingTask, title, dueDate, recurrence, onClose]);
+    }, [editingTask, title, dueDate, time, recurrence, onClose]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -180,6 +200,13 @@ export function TaskEditModal({ task, isOpen, onClose }: TaskEditModalProps) {
                                     label={isEditingParent ? 'Series Start Date' : 'Due Date'}
                                     value={dueDate}
                                     onChange={(e) => setDueDate(e.target.value)}
+                                />
+
+                                {/* Time Input */}
+                                <TimePicker
+                                    label="Time (Optional)"
+                                    value={time}
+                                    onChange={(e) => setTime(e.target.value)}
                                 />
 
                                 {/* Recurrence Picker (for templates) */}

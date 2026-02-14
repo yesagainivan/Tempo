@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 import type { Task } from '../../lib/db';
 import { toggleTaskComplete, deleteTask, updateTask } from '../../lib/db';
 import { Checkbox, ConfirmDialog, TaskEditModal } from '../ui';
@@ -114,6 +115,19 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                     >
                         {task.title}
                     </p>
+
+                    {/* Time Display (if valid time exists and is not midnight) */}
+                    {(() => {
+                        const date = new Date(task.dueDate);
+                        const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
+                        if (!hasTime) return null;
+
+                        return (
+                            <span className="text-xs font-medium text-accent-primary mt-1 block">
+                                {format(date, 'h:mm a')}
+                            </span>
+                        );
+                    })()}
 
                     {/* Deep Task Indicator */}
                     {isDeep && !isExpanded && (

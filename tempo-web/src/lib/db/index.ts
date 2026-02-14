@@ -252,9 +252,10 @@ export async function updateTaskContent(taskId: string, content: string): Promis
  * Reschedule a task to a new date
  */
 export async function rescheduleTask(taskId: string, newDate: Date): Promise<void> {
+    const dueDateLocal = format(newDate, 'yyyy-MM-dd');
     await db.execute(
-        `UPDATE tasks SET due_date = ?, updated_at = ? WHERE id = ?`,
-        [newDate.getTime(), Date.now(), taskId]
+        `UPDATE tasks SET due_date = ?, due_date_local = ?, updated_at = ? WHERE id = ?`,
+        [newDate.getTime(), dueDateLocal, Date.now(), taskId]
     );
 }
 

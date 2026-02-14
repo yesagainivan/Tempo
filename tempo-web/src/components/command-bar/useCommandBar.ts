@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@powersync/react';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { type Task, saveTask, rowToTask } from '../../lib/db';
 import type { Recurrence } from '../../lib/db';
 import { fuzzySearch } from '../../lib/search/fuzzySearch';
@@ -181,7 +181,7 @@ export function useCommandBar({
     const handleCreateTask = useCallback(async () => {
         if (!commandState.parsedTitle) return;
 
-        const date = commandState.parsedDate || new Date();
+        const date = commandState.parsedDate || startOfDay(new Date());
         const newTask: Task = {
             id: crypto.randomUUID(),
             title: commandState.parsedTitle,
