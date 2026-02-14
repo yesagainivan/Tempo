@@ -1,6 +1,6 @@
 import { memo, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { addMonths, subMonths, startOfMonth } from 'date-fns';
+import { addMonths, subMonths } from 'date-fns';
 import { CalendarTile } from './CalendarTile';
 import { TodayTile } from './TodayTile';
 import { UpcomingTile } from './UpcomingTile';
@@ -12,21 +12,25 @@ import { StatsModal } from '../stats';
 // =================================================================
 
 interface HomeProps {
+    currentMonth: Date;
+    onMonthChange: (date: Date) => void;
     onSelectDate: (date: Date) => void;
 }
 
-export const Home = memo(function Home({ onSelectDate }: HomeProps) {
-    const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
+export const Home = memo(function Home({ currentMonth, onMonthChange, onSelectDate }: HomeProps) {
+    // State lifted to App.tsx
+    // const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date())); 
+
     const [selectedDate, setSelectedDate] = useState(() => new Date());
     const [isStatsOpen, setIsStatsOpen] = useState(false);
 
     const goToPrevMonth = useCallback(() => {
-        setCurrentMonth(prev => subMonths(prev, 1));
-    }, []);
+        onMonthChange(subMonths(currentMonth, 1));
+    }, [currentMonth, onMonthChange]);
 
     const goToNextMonth = useCallback(() => {
-        setCurrentMonth(prev => addMonths(prev, 1));
-    }, []);
+        onMonthChange(addMonths(currentMonth, 1));
+    }, [currentMonth, onMonthChange]);
 
     const handleSelectDate = useCallback((date: Date) => {
         setSelectedDate(date);

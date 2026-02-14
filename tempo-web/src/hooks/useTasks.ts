@@ -1,183 +1,89 @@
-import { useQuery } from '@powersync/react';
-import { format, startOfDay, endOfDay, addDays } from 'date-fns';
-import { generateRecurringInstances } from '../lib/db/recurrence';
-import { type Task, rowToTask } from '../lib/db';
 import { useMemo } from 'react';
-import { useTaskContext } from './useTaskContext';
-
-
-// =================================================================
-// RECURRENCE MERGE LOGIC
-// =================================================================
-
-function mergeTasksWithRecurrence(
-    rangeTasks: Task[],
-    templates: Task[],
-    completedInstanceIds: Set<string>,
-    start: Date,
-    end: Date
-): Task[] {
-    // Generate virtual instances for each template
-    const virtualInstances: Task[] = [];
-    for (const template of templates) {
-        const instances = generateRecurringInstances(template, start, end);
-        virtualInstances.push(...instances);
-    }
-
-    // Filter out virtual instances that have a persisted version (completed or exception)
-    const persistedIds = new Set(rangeTasks.map(t => t.id));
-
-    const filteredVirtual = virtualInstances.filter(v => {
-        // Don't add if already persisted (completed or otherwise)
-        if (persistedIds.has(v.id)) return false;
-        // Don't add if marked as completed (and tracked in completed_ids set)
-        if (completedInstanceIds.has(v.id)) return false;
-        return true;
-    });
-
-    return [...rangeTasks, ...filteredVirtual];
-}
-
+import { type Task, rowToTask } from '../lib/db';
+import { useTaskData } from './useTaskContext'; // Actions no longer needed for window
+import { format, startOfDay, addDays } from 'date-fns';
+import { useQuery } from '@powersync/react';
 
 // =================================================================
-// REACTIVE HOOKS
+// CONSUMER HOOKS (Optimized)
 // =================================================================
 
 /**
- * Get all tasks for a specific date (reactive) - includes recurring instances
+ * Get all tasks for a specific date (from Cache)
  */
 export function useTasksForDate(date: Date): Task[] {
-    // Use YYYY-MM-DD format for timezone-agnostic queries
-    const dateStr = format(date, 'yyyy-MM-dd');
-    // Keep timestamps for recurrence calculations
-    const dayStart = startOfDay(date).getTime();
-    const dayEnd = endOfDay(date).getTime();
+    const { tasksMap } = useTaskData();
+    // Window management is now handled by App.tsx, so we just read what's available.
 
-    // 1. Get standard tasks for the day using date string
-    const { data: rangeRows } = useQuery(
-        `SELECT * FROM tasks WHERE due_date_local = ?`,
-        [dateStr]
-    );
+    // If date is outside window, tasks will be empty array.
+    // The App's "Selected Date" state should drive the window update.
 
-    // 2. Get recurring templates from Context (Single Source of Truth)
-    const { recurrenceTemplates } = useTaskContext();
-
-    // 3. Get completed instance IDs (to exclude virtuals that are done)
-    // Note: We need completed instances that might NOT be in the range query if they are virtuals persisted?
-    // Actually, persisted virtuals ARE in rangeRows if they have due_date in range.
-    // The only edge case is if we track completion in a separate table, but currently we insert them into 'tasks'.
-    // So rangeRows covers completed instances for this day.
-    // We only need global completed check if we stored completions separately.
-    // Since persisted instances are in 'tasks', we are good.
-
-    const tasks = useMemo(() => {
-        // Optimization: Quick return if no data
-        const rows = rangeRows || [];
-        if (rows.length === 0 && recurrenceTemplates.length === 0) return [];
-
-        const rangeTasks = rows.map(rowToTask);
-
-        // Filter templates: exclude generated instances from templates list if any leak in
-        // AND pre-filter templates that definitely don't overlap with the day
-        const dayStartInstance = new Date(dayStart);
-        const dayEndInstance = new Date(dayEnd);
-
-        const cleanTemplates = recurrenceTemplates.filter(t => {
-            if (t.isRecurringInstance) return false;
-            // Creation date check (start date)
-            if (t.dueDate > dayEnd) return false;
-            // Recurrence end date check
-            if (t.recurrence?.endDate && t.recurrence.endDate < dayStart) return false;
-            return true;
-        });
-
-        const merged = mergeTasksWithRecurrence(
-            rangeTasks,
-            cleanTemplates,
-            new Set(), // Persisted instances already in rangeTasks
-            dayStartInstance,
-            dayEndInstance
-        );
-
-        return merged.sort((a, b) => a.order - b.order);
-    }, [rangeRows, recurrenceTemplates, dayStart, dayEnd]);
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const tasks = tasksMap.get(dateKey) || [];
 
     return tasks;
 }
 
 /**
- * Get all tasks in a date range (reactive)
+ * Get all tasks in a date range (from Cache + Filter)
  */
 export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
-    // Use YYYY-MM-DD format for timezone-agnostic queries
-    const startStr = format(startDate, 'yyyy-MM-dd');
-    const endStr = format(endDate, 'yyyy-MM-dd');
-    // Keep timestamps for recurrence calculations
-    const startTs = startDate.getTime();
-    const endTs = endDate.getTime();
+    const { tasksMap } = useTaskData();
 
-    const { data: rangeRows } = useQuery(
-        `SELECT * FROM tasks WHERE due_date_local BETWEEN ? AND ?`,
-        [startStr, endStr]
-    );
-
-    const { recurrenceTemplates } = useTaskContext();
-
+    // Efficiently gather tasks from the map for the range
     const tasks = useMemo(() => {
-        // Optimization: Quick return
-        const rows = rangeRows || [];
-        if (rows.length === 0 && recurrenceTemplates.length === 0) return [];
+        const result: Task[] = [];
+        // Iterate days in range
+        const current = new Date(startDate);
 
-        const rangeTasks = rows.map(rowToTask);
-
-        // Date objects for range
-        const rangeStartDate = new Date(startTs);
-        const rangeEndDate = new Date(endTs);
-
-        const cleanTemplates = recurrenceTemplates.filter(t => {
-            if (t.isRecurringInstance) return false;
-            // Creation date check
-            if (t.dueDate > endTs) return false;
-            // Recurrence end date check
-            if (t.recurrence?.endDate && t.recurrence.endDate < startTs) return false;
-            return true;
-        });
-
-        return mergeTasksWithRecurrence(
-            rangeTasks,
-            cleanTemplates,
-            new Set(),
-            rangeStartDate,
-            rangeEndDate
-        );
-    }, [rangeRows, recurrenceTemplates, startTs, endTs]);
+        while (current <= endDate) {
+            const key = format(current, 'yyyy-MM-dd');
+            const daysTasks = tasksMap.get(key);
+            if (daysTasks) {
+                result.push(...daysTasks);
+            }
+            current.setDate(current.getDate() + 1);
+        }
+        return result;
+    }, [startDate, endDate, tasksMap]);
 
     return tasks;
 }
 
 /**
- * Get a single task by ID (reactive)
+ * Get a single task by ID (Cache First -> Fallback to DB)
  */
 export function useTask(taskId: string | null): Task | undefined {
+    const { taskIdMap } = useTaskData();
+
+    // 1. Try FAST In-Memory Cache (O(1))
+    // This covers all tasks currently within the active window (e.g., this month)
+    const cachedTask = useMemo(() => {
+        if (!taskId) return undefined;
+        return taskIdMap.get(taskId);
+    }, [taskId, taskIdMap]);
+
+    // 2. Fallback: Direct Database Query
+    // Only fetch if we have an ID but it wasn't found in the map (e.g. from a deep link outside the window)
+    const shouldFetch = !!taskId && !cachedTask;
+
     const { data } = useQuery(
         `SELECT * FROM tasks WHERE id = ?`,
-        taskId ? [taskId] : []
+        shouldFetch ? [taskId] : []
     );
 
-    const task = useMemo(() => {
+    const fallbackTask = useMemo(() => {
         if (!data || data.length === 0) return undefined;
         return rowToTask(data[0]);
     }, [data]);
 
-    return task;
+    return cachedTask || fallbackTask;
 }
 
 /**
  * Get count of tasks for a date
  */
 export function useTaskCountForDate(date: Date): number {
-    // We can reuse useTasksForDate logic or optimize.
-    // Reusing is safer for consistency.
     const tasks = useTasksForDate(date);
     return tasks.filter(t => !t.completed).length;
 }
@@ -186,28 +92,36 @@ export function useTaskCountForDate(date: Date): number {
  * Get upcoming tasks for the next N days
  */
 export function useUpcomingTasks(days: number = 7): { date: Date; tasks: Task[] }[] {
-    const { rangeStart, rangeEnd } = useMemo(() => {
-        const start = startOfDay(new Date());
-        return { rangeStart: addDays(start, 1), rangeEnd: addDays(start, days) };
-    }, [days]);
+    // Stable reference for "today" to prevent re-renders on every second
+    const today = useMemo(() => startOfDay(new Date()), []);
+    const rangeStart = useMemo(() => addDays(today, 1), [today]);
+    const rangeEnd = useMemo(() => addDays(today, days), [today, days]);
 
     const tasksInRange = useTasksInRange(rangeStart, rangeEnd);
 
+    // Grouping
     const result = useMemo(() => {
         const groups: { date: Date; tasks: Task[] }[] = [];
+        // Helper map for grouping the linear list back to dates
+        const byDate = new Map<string, Task[]>();
 
-        // Group by day
+        for (const t of tasksInRange) {
+            const k = t.dueDateLocal;
+            if (!byDate.has(k)) byDate.set(k, []);
+            byDate.get(k)?.push(t);
+        }
+
         for (let i = 0; i < days; i++) {
             const date = addDays(rangeStart, i);
-            const dayStart = startOfDay(date).getTime();
-            const dayEnd = endOfDay(date).getTime();
+            const key = format(date, 'yyyy-MM-dd');
+            const dayTasks = byDate.get(key) || [];
 
-            const daysTasks = tasksInRange.filter(
-                t => t.dueDate >= dayStart && t.dueDate <= dayEnd && !t.completed
-            );
-
-            if (daysTasks.length > 0) {
-                groups.push({ date, tasks: daysTasks });
+            if (dayTasks.length > 0) {
+                // Filter out completed if desired, though generic getter usually returns all
+                const pending = dayTasks.filter(t => !t.completed);
+                if (pending.length > 0) {
+                    groups.push({ date, tasks: pending });
+                }
             }
         }
         return groups;

@@ -19,9 +19,9 @@ export interface StatsData {
 
 export function useStats(): StatsData {
     // 1. Fetch Aggregated Stats directly from SQL
-    // completed_at is stored as a timestamp (ms)
-    // We group by day to build the heatmap efficiently
-    // date(completed_at / 1000, 'unixepoch') gives YYYY-MM-DD
+    // We keep this separate from the main task data window as it aggregates history
+    // outside the current view window.
+    // However, we can memoize the query result heavily.
     const { data: dailyCounts } = useQuery(`
         SELECT 
             date(completed_at / 1000, 'unixepoch', 'localtime') as day,
@@ -67,7 +67,6 @@ export function useStats(): StatsData {
         let totalCompleted = 0;
 
         // Process SQL results (already aggregated by day)
-        // dailyCounts is [{ day: '2023-01-01', count: 5 }, ...]
         if (dailyCounts) {
             dailyCounts.forEach((row: { day: string; count: number }) => {
                 const count = row.count;
@@ -76,16 +75,6 @@ export function useStats(): StatsData {
                 activityMap.set(dayStr, count);
                 totalCompleted += count;
 
-                // row.day is YYYY-MM-DD
-                // const date = new Date(dayStr); // Unused
-
-                // Adjust for timezone potentially? 
-                // 'localtime' in SQL might help matching local date
-                // But new Date(YYYY-MM-DD) is UTC usually. 
-                // Let's ensure consistency.
-                // If SQL returned '2025-02-11', new Date('2025-02-11') is UTC.
-                // But we want local start of day for differenceInDays.
-                // Actually, simplest is to just parse YYYY, MM, DD and make local date.
                 const [y, m, d] = dayStr.split('-').map(Number);
                 const localDate = new Date(y, m - 1, d);
 
@@ -98,8 +87,6 @@ export function useStats(): StatsData {
         let longestStreak = 0;
 
         if (uniqueDayTimestamps.length > 0) {
-            // Check if active today or yesterday
-            // uniqueDayTimestamps are sorted DESC by query
             const mostRecentTs = uniqueDayTimestamps[0];
             const mostRecentDate = new Date(mostRecentTs);
             const diff = differenceInDays(today, mostRecentDate);
@@ -125,7 +112,7 @@ export function useStats(): StatsData {
             let tempStreak = 1;
             if (uniqueDayTimestamps.length > 0) {
                 let prevDate = new Date(uniqueDayTimestamps[0]);
-                longestStreak = 1; // At least 1 if we have data
+                longestStreak = 1;
 
                 for (let i = 1; i < uniqueDayTimestamps.length; i++) {
                     const currentDate = new Date(uniqueDayTimestamps[i]);
@@ -160,5 +147,5 @@ export function useStats(): StatsData {
             heatmap: activityMap
         };
 
-    }, [dailyCounts, rates, now]);
+    }, [dailyCounts, rates, now.getTime()]); // Use getTime for stable dependency
 }

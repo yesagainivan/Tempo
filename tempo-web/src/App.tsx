@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from './stores/appStore';
 import { Home } from './components/home';
 import { DayAgenda } from './components/calendar';
+import { startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays } from 'date-fns';
 import { CommandBar } from './components/command-bar';
 import { Header } from './components/layout/Header';
 import { SettingsModal } from './components/settings/SettingsModal';
@@ -12,6 +13,7 @@ import { db, setupPowerSync, connector } from './lib/db/powersync';
 import { useAuthStore } from './stores/authStore';
 import { AuthModal } from './components/auth/AuthModal';
 import { TaskProvider } from './contexts/TaskProvider';
+import type { ViewWindow } from './contexts/TaskContextDef';
 
 // =================================================================
 // TEMPO APP SHELL - Home Dashboard First
@@ -24,8 +26,7 @@ function App() {
   const { initialize: initAuth } = useAuthStore();
   const [dbReady, setDbReady] = useState(false);
 
-  // Auth Modal State (controlled by user action or first time?)
-  // For now, only manual trigger via Settings or logic
+  // Auth Modal State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
@@ -48,6 +49,29 @@ function App() {
   // Navigation state
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+
+  // Lifted Home State
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
+
+  // Centralized Window Logic
+  // App determines the window based on viewMode
+  const viewWindow: ViewWindow = (() => {
+    if (viewMode === 'home') {
+      // Month View: Current Month +/- 1 Month Buffer
+      // This ensures smooth transitions when swiping/clicking next month
+      return {
+        start: startOfMonth(subMonths(currentMonth, 1)),
+        end: endOfMonth(addMonths(currentMonth, 1))
+      };
+    } else {
+      // Day View: Selected Date +/- 15 Days Buffer
+      // Allows for quick day switching without loading
+      return {
+        start: addDays(startOfDay(selectedDate), -15),
+        end: addDays(endOfDay(selectedDate), 15)
+      };
+    }
+  })();
 
   // Settings state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -146,9 +170,8 @@ function App() {
 
   return (
     <PowerSyncContext.Provider value={db}>
-      <TaskProvider>
+      <TaskProvider viewWindow={viewWindow}>
         <div className="min-h-screen bg-bg-primary text-text-primary">
-          {/* Header */}
           {/* Header */}
           <Header
             viewMode={viewMode}
@@ -170,7 +193,11 @@ function App() {
                   transition={{ duration: 0.2 }}
                   className="pt-4"
                 >
-                  <Home onSelectDate={handleSelectDate} />
+                  <Home
+                    currentMonth={currentMonth}
+                    onMonthChange={setCurrentMonth}
+                    onSelectDate={handleSelectDate}
+                  />
                 </motion.div>
               ) : (
                 <motion.div

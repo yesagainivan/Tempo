@@ -11,7 +11,7 @@ import {
     isToday,
     isSameDay,
 } from 'date-fns';
-import { useTasksInRange } from '../../hooks/useTasks';
+import { useTasksInRange } from '../../hooks/useTasks'; // This hook now uses context internally
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
 import type { Task } from '../../lib/db';
 
