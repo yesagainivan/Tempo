@@ -28,6 +28,9 @@ export function TaskProvider({ children, viewWindow }: TaskProviderProps) {
     );
 
     // 2. Process Data & Generate Instances (Memoized)
+    const startTime = viewWindow.start.getTime();
+    const endTime = viewWindow.end.getTime();
+
     const { tasksMap, recurrenceTemplates, taskIdMap } = useMemo(() => {
         const map = new Map<string, Task[]>();
         const idMap = new Map<string, Task>();
@@ -71,8 +74,8 @@ export function TaskProvider({ children, viewWindow }: TaskProviderProps) {
             templates.push(...temps);
 
             // Generate Virtual Instances
-            const windowStart = viewWindow.start;
-            const windowEnd = viewWindow.end;
+            const windowStart = new Date(startTime);
+            const windowEnd = new Date(endTime);
 
             for (const template of temps) {
                 // Also add template to ID map for direct lookup
@@ -97,7 +100,7 @@ export function TaskProvider({ children, viewWindow }: TaskProviderProps) {
         }
 
         return { tasksMap: map, recurrenceTemplates: templates, taskIdMap: idMap };
-    }, [rangeRows, templateRows, viewWindow.start.getTime(), viewWindow.end.getTime()]);
+    }, [rangeRows, templateRows, startTime, endTime]);
 
     // 3. Construct Context Values
     const dataValue = useMemo(() => ({

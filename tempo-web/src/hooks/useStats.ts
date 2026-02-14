@@ -58,8 +58,9 @@ export function useStats(): StatsData {
     }, [ratesRows]);
 
 
+    const nowTime = now.getTime();
     return useMemo(() => {
-        const today = startOfDay(now);
+        const today = startOfDay(nowTime);
 
         // --- Heatmap Data & Streak Calculation ---
         const activityMap = new Map<string, number>();
@@ -147,5 +148,5 @@ export function useStats(): StatsData {
             heatmap: activityMap
         };
 
-    }, [dailyCounts, rates, now.getTime()]); // Use getTime for stable dependency
+    }, [dailyCounts, rates, nowTime]); // Use getTime for stable dependency
 }

@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppStore } from './stores/appStore';
 import { Home } from './components/home';
 import { DayAgenda } from './components/calendar';
-import { startOfMonth, endOfMonth, startOfDay, endOfDay, addMonths, subMonths, addDays } from 'date-fns';
+import { startOfMonth, endOfMonth, addMonths, subMonths, isSameMonth } from 'date-fns';
 import { CommandBar } from './components/command-bar';
 import { Header } from './components/layout/Header';
 import { SettingsModal } from './components/settings/SettingsModal';
@@ -54,24 +54,13 @@ function App() {
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
 
   // Centralized Window Logic
-  // App determines the window based on viewMode
-  const viewWindow: ViewWindow = (() => {
-    if (viewMode === 'home') {
-      // Month View: Current Month +/- 1 Month Buffer
-      // This ensures smooth transitions when swiping/clicking next month
-      return {
-        start: startOfMonth(subMonths(currentMonth, 1)),
-        end: endOfMonth(addMonths(currentMonth, 1))
-      };
-    } else {
-      // Day View: Selected Date +/- 15 Days Buffer
-      // Allows for quick day switching without loading
-      return {
-        start: addDays(startOfDay(selectedDate), -15),
-        end: addDays(endOfDay(selectedDate), 15)
-      };
-    }
-  })();
+  // Optimization: Always use the Month Window (+/- 1 month)
+  // This ensures that switching between Home and Day views does NOT trigger a re-query.
+  // The Day view will simply consume from the already-loaded month data.
+  const viewWindow: ViewWindow = useMemo(() => ({
+    start: startOfMonth(subMonths(currentMonth, 1)),
+    end: endOfMonth(addMonths(currentMonth, 1))
+  }), [currentMonth]);
 
   // Settings state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -85,24 +74,39 @@ function App() {
 
   const handleBackToHome = useCallback(() => {
     setExpandedTaskId(null); // Collapse any expanded task
+    console.log('Back to Home', currentMonth);
     setViewMode('home');
-  }, [setExpandedTaskId]);
+  }, [setExpandedTaskId, currentMonth]);
 
   const handleDateChange = useCallback((date: Date) => {
     setSelectedDate(date);
-  }, []);
+
+    // If the new date is outside the currently visible month, update the calendar (and window)
+    // This ensures that the user never "walks out" of the loaded data window.
+    if (!isSameMonth(date, currentMonth)) {
+      setCurrentMonth(startOfMonth(date));
+    }
+  }, [currentMonth]);
 
   // Command bar handlers
   const handleCreateTask = useCallback((_taskId: string, date: Date) => {
     // Navigate to the day where task was created
     setSelectedDate(date);
+    // Ensure we load the data for that month
+    if (!isSameMonth(date, currentMonth)) {
+      setCurrentMonth(startOfMonth(date));
+    }
     setViewMode('day');
-  }, []);
+  }, [currentMonth]);
 
   const handleJumpToDate = useCallback((date: Date) => {
     setSelectedDate(date);
+    // Ensure we load the data for that month
+    if (!isSameMonth(date, currentMonth)) {
+      setCurrentMonth(startOfMonth(date));
+    }
     setViewMode('day');
-  }, []);
+  }, [currentMonth]);
 
   const handleSelectTask = useCallback((task: Task) => {
     // Navigate to the task's due date

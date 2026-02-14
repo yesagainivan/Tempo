@@ -20,10 +20,7 @@ export interface TaskDataContextValue {
     taskIdMap: Map<string, Task>;
 }
 
-export interface TaskActionsContextValue {
-    // Stable CRUD methods (create, update, delete) will go here.
-    // Window management is now handled by App state.
-}
+export type TaskActionsContextValue = Record<string, never>;
 
 export const TaskDataContext = createContext<TaskDataContextValue | undefined>(undefined);
 export const TaskActionsContext = createContext<TaskActionsContextValue | undefined>(undefined);
