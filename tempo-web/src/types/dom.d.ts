@@ -1,0 +1,4 @@
+
+interface HTMLInputElement {
+    showPicker?(): void;
+}

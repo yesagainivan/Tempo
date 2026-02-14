@@ -4,6 +4,12 @@
    TEMPO DESIGN SYSTEM
    ================================================================= */
 
+/* Customizing Native Date/Time Pickers */
+.hide-calendar-picker-indicator::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
 /* Custom Theme Variables */
 @theme {
   /* Colors - Dark Mode First */

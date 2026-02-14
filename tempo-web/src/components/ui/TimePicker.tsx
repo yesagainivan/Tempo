@@ -1,5 +1,6 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
+import { forwardRef, type InputHTMLAttributes, useRef, useImperativeHandle } from 'react';
 import { Input } from './Input';
+import { ClockIcon } from '../icons';
 
 // =================================================================
 // TIME PICKER COMPONENT
@@ -12,11 +13,37 @@ interface TimePickerProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 't
 
 export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(
     ({ className = '', ...props }, ref) => {
+        const inputRef = useRef<HTMLInputElement>(null);
+
+        useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
+
+        const handleIconClick = () => {
+            if (inputRef.current) {
+                if ('showPicker' in inputRef.current) {
+                    try {
+                        inputRef.current.showPicker!();
+                    } catch {
+                        inputRef.current.focus();
+                    }
+                } else {
+                    inputRef.current.focus();
+                }
+            }
+        };
+
         return (
             <Input
-                ref={ref}
+                ref={inputRef}
                 type="time"
-                className={className}
+                className={`hide-calendar-picker-indicator pr-10 ${className}`}
+                suffix={
+                    <div
+                        className="text-text-muted cursor-pointer hover:text-text-primary transition-colors pointer-events-auto"
+                        onClick={handleIconClick}
+                    >
+                        <ClockIcon size={16} />
+                    </div>
+                }
                 {...props}
             />
         );
