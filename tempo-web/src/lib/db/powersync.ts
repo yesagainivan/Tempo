@@ -105,6 +105,9 @@ export const db = new PowerSyncDatabase({
     database: {
         dbFilename: 'tempo.db',
     },
+    flags: {
+        useWebWorker: false, // Disabling worker to prevent Safari crashes
+    }
 });
 
 export const setupPowerSync = async () => {

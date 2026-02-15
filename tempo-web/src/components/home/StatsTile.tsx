@@ -32,14 +32,6 @@ export const StatsTile = memo(function StatsTile({ onClick }: StatsTileProps) {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onClick={onClick}
         >
-            {/* Background Gradient/Glow */}
-            <div className={`
-                absolute -right-10 -top-10 w-40 h-40 
-                bg-accent-primary/5 rounded-full blur-3xl 
-                transition-opacity duration-500
-                ${currentStreak > 0 ? 'opacity-100' : 'opacity-0'}
-            `} />
-
             <div className="relative flex flex-col justify-between h-full">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">

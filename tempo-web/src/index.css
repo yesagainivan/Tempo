@@ -170,9 +170,9 @@ body {
 
 .glass {
   background: var(--color-bg-glass);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  @apply backdrop-blur-[12px];
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  @apply backdrop-blur-[8px];
   border: 1px solid var(--color-border-subtle);
   /* Hardware acceleration for Safari scrolling */
   transform: translateZ(0);
