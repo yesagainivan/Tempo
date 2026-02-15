@@ -90,7 +90,7 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
             {/* Header Row: Checkbox + Title + Actions */}
             <div className="flex items-start gap-3 w-full relative">
                 {/* Checkbox */}
-                <motion.div layout="position" className="pt-0.5 flex-shrink-0">
+                <motion.div className="pt-0.5 flex-shrink-0">
                     <Checkbox
                         checked={task.completed}
                         onCheckedChange={handleToggle}
@@ -99,7 +99,6 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
 
                 {/* Task Title & Badges */}
                 <motion.div
-                    layout="position"
                     className="flex-1 min-w-0"
                     onClick={handleClick}
                 >
@@ -169,7 +168,6 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
 
                 {/* Action Buttons - always visible when expanded, hover otherwise */}
                 <motion.div
-                    layout="position"
                     className={`
                 flex items-center gap-1
                 transition-opacity duration-200

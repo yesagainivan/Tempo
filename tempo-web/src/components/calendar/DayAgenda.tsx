@@ -151,17 +151,15 @@ export const DayAgenda = memo(function DayAgenda({
 
                     {/* Tasks List */}
                     <div className="space-y-2 mb-4">
-                        <AnimatePresence mode="popLayout">
+                        <AnimatePresence>
                             {tasks.map((task) => (
                                 <motion.div
                                     key={task.id}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                                    layout
                                     transition={{
-                                        duration: 0.2, // Base duration for opacity/transform
-                                        layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
+                                        duration: 0.2
                                     }}
                                 >
                                     <TaskItem task={task} />
