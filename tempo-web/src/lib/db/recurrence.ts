@@ -186,6 +186,10 @@ function isYearlyMatch(start: Date, target: Date, interval: number): boolean {
  * Generate recurring task instances for a date range
  * Returns virtual instances (not persisted) that should appear in the range
  */
+/**
+ * Generate recurring task instances for a date range
+ * Returns virtual instances (not persisted) that should appear in the range
+ */
 export function generateRecurringInstances(
     template: Task,
     rangeStart: Date,
@@ -196,28 +200,31 @@ export function generateRecurringInstances(
     const instances: Task[] = [];
     const { pattern, interval = 1, daysOfWeek, endDate: recurrenceEndDate } = template.recurrence;
 
+    // Safety: Ensure interval is positive
+    const safeInterval = Math.max(1, interval);
+
     // Normalize dates
     const start = startOfDay(rangeStart);
     const end = startOfDay(rangeEnd);
     const templateStart = startOfDay(new Date(template.dueDate));
 
+    // Safety: Check for invalid dates
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || isNaN(templateStart.getTime())) {
+        console.warn('generateRecurringInstances: Invalid date detected', { start, end, templateStart });
+        return [];
+    }
+
     // Effective end date (earlier of range end or recurrence end)
     let effectiveEnd = end;
     if (recurrenceEndDate) {
         const recEnd = startOfDay(new Date(recurrenceEndDate));
-        if (isBefore(recEnd, effectiveEnd)) {
+        if (!isNaN(recEnd.getTime()) && isBefore(recEnd, effectiveEnd)) {
             effectiveEnd = recEnd;
         }
     }
 
     // Performance Optimization:
-    // Jump directly to the first possible occurrence near rangeStart, instead of iterating from templateStart.
-    // However, for complex patterns (e.g. weekly with specific days), reliable jumping is tricky.
-    // Given the typical range (42 days for calendar) vs recurrence duration (potentially years),
-    // we should iterate efficiently.
-
-    // 1. If strict daily/weekly/monthly/yearly, we can calculate jumps.
-
+    // Jump directly to the first possible occurrence near rangeStart
     let current = new Date(templateStart);
 
     // Fast-forward to rangeStart if needed
@@ -225,34 +232,43 @@ export function generateRecurringInstances(
         if (pattern === 'daily') {
             const diffDays = Math.floor((start.getTime() - current.getTime()) / (1000 * 60 * 60 * 24));
             // Jump to just before or at start
-            const jumps = Math.floor(diffDays / interval);
+            const jumps = Math.floor(diffDays / safeInterval);
             if (jumps > 0) {
-                current = addDays(current, jumps * interval);
+                current = addDays(current, jumps * safeInterval);
             }
         } else if (pattern === 'weekly' && (!daysOfWeek || daysOfWeek.length === 0)) {
             const diffWeeks = Math.floor((start.getTime() - current.getTime()) / (1000 * 60 * 60 * 24 * 7));
-            const jumps = Math.floor(diffWeeks / interval);
+            const jumps = Math.floor(diffWeeks / safeInterval);
             if (jumps > 0) {
-                current = addWeeks(current, jumps * interval);
+                current = addWeeks(current, jumps * safeInterval);
             }
         } else if (pattern === 'monthly') {
             // Rough jump for months
             const diffMonths = (start.getFullYear() - current.getFullYear()) * 12 + (start.getMonth() - current.getMonth());
-            const jumps = Math.floor(diffMonths / interval);
+            const jumps = Math.floor(diffMonths / safeInterval);
             if (jumps > 0) {
-                current = addMonths(current, jumps * interval);
+                current = addMonths(current, jumps * safeInterval);
             }
         } else if (pattern === 'yearly') {
             const diffYears = start.getFullYear() - current.getFullYear();
-            const jumps = Math.floor(diffYears / interval);
+            const jumps = Math.floor(diffYears / safeInterval);
             if (jumps > 0) {
-                current = addYears(current, jumps * interval);
+                current = addYears(current, jumps * safeInterval);
             }
         }
     }
 
     // Iteration Loop: Now we are close to start, iterate forward until we pass end
+    let loopCount = 0;
+    const MAX_LOOPS = 1000; // Failsafe against infinite loops
+
     while (!isAfter(current, effectiveEnd)) {
+        loopCount++;
+        if (loopCount > MAX_LOOPS) {
+            console.warn('generateRecurringInstances: Max loops exceeded', { templateId: template.id });
+            break;
+        }
+
         // Only add if within range [start, effectiveEnd]
         if (!isBefore(current, start)) {
             if (shouldOccurOn(template, current)) {
@@ -265,13 +281,13 @@ export function generateRecurringInstances(
 
         // Efficient Next Step
         // Use getNextOccurrence to jump properly instead of +1 day loop
-        // BUT getNextOccurrence logic needs to be robust. 
-        // Let's rely on getNextOccurrence which we already have, it defines the jump logic.
-        const next = getNextOccurrence(template.recurrence, current);
+        // We calculate next step based on the CURRENT VALID 'current'
+        const next = getNextOccurrence({ ...template.recurrence!, interval: safeInterval }, current);
 
-        // Safety break to prevent infinite loops if next <= current
-        if (!isAfter(next, current)) {
-            current = addDays(current, 1); // Fallback
+        // Safety break: Ensure we actually move forward
+        if (!isAfter(next, current) || isNaN(next.getTime())) {
+            // Force move forward by 1 day if stuck
+            current = addDays(current, 1);
         } else {
             current = next;
         }

@@ -176,7 +176,6 @@ body {
   border: 1px solid var(--color-border-subtle);
   /* Hardware acceleration for Safari scrolling */
   transform: translateZ(0);
-  will-change: transform;
 }
 
 .glow {
