@@ -236,42 +236,48 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 )}
             </AnimatePresence>
 
-            {/* Edit Modal */}
-            <TaskEditModal
-                task={task}
-                isOpen={isEditing}
-                onClose={() => setIsEditing(false)}
-            />
+            {/* Edit Modal — only mount when actually editing */}
+            {isEditing && (
+                <TaskEditModal
+                    task={task}
+                    isOpen={isEditing}
+                    onClose={() => setIsEditing(false)}
+                />
+            )}
 
-            {/* Delete Confirmation Dialog */}
-            <ConfirmDialog
-                isOpen={isDeleting}
-                onClose={() => setIsDeleting(false)}
-                onConfirm={handleDelete}
-                title={
-                    (task.recurrence || task.isRecurringInstance)
-                        ? 'Delete Recurring Series'
-                        : 'Delete Task'
-                }
-                description={
-                    (task.recurrence || task.isRecurringInstance)
-                        ? `This is a recurring task. Deleting it will remove "${task.title}" and all its future occurrences. This cannot be undone.`
-                        : `Are you sure you want to delete "${task.title}"? This action cannot be undone.`
-                }
-                confirmText={(task.recurrence || task.isRecurringInstance) ? 'Delete Series' : 'Delete'}
-                variant="danger"
-            />
+            {/* Delete Confirmation — only mount when needed */}
+            {isDeleting && (
+                <ConfirmDialog
+                    isOpen={isDeleting}
+                    onClose={() => setIsDeleting(false)}
+                    onConfirm={handleDelete}
+                    title={
+                        (task.recurrence || task.isRecurringInstance)
+                            ? 'Delete Recurring Series'
+                            : 'Delete Task'
+                    }
+                    description={
+                        (task.recurrence || task.isRecurringInstance)
+                            ? `This is a recurring task. Deleting it will remove "${task.title}" and all its future occurrences. This cannot be undone.`
+                            : `Are you sure you want to delete "${task.title}"? This action cannot be undone.`
+                    }
+                    confirmText={(task.recurrence || task.isRecurringInstance) ? 'Delete Series' : 'Delete'}
+                    variant="danger"
+                />
+            )}
 
-            {/* Demote Confirmation Dialog */}
-            <ConfirmDialog
-                isOpen={isDemoting}
-                onClose={() => setIsDemoting(false)}
-                onConfirm={confirmDemote}
-                title="Convert to Quick Task"
-                description="This will delete all notes attached to this task. This action cannot be undone."
-                confirmText="Delete Notes"
-                variant="danger"
-            />
+            {/* Demote Confirmation — only mount when needed */}
+            {isDemoting && (
+                <ConfirmDialog
+                    isOpen={isDemoting}
+                    onClose={() => setIsDemoting(false)}
+                    onConfirm={confirmDemote}
+                    title="Convert to Quick Task"
+                    description="This will delete all notes attached to this task. This action cannot be undone."
+                    confirmText="Delete Notes"
+                    variant="danger"
+                />
+            )}
 
             {/* Type Badge - hide on hover and when expanded */}
             {isDeep && !isExpanded && (

@@ -39,14 +39,13 @@ export const UpcomingTile = memo(function UpcomingTile({ onSelectDate }: Upcomin
                 initial="hidden"
                 animate="visible"
             >
-                <AnimatePresence mode="popLayout" initial={false}>
+                <AnimatePresence initial={false}>
                     {upcomingGroups.slice(0, 5).map((group) => (
                         <motion.div
                             key={group.date.toISOString()}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
-                            layout
                             transition={{ duration: 0.2 }}
                         >
                             <motion.button
@@ -90,7 +89,6 @@ export const UpcomingTile = memo(function UpcomingTile({ onSelectDate }: Upcomin
                 {upcomingGroups.length > 5 && (
                     <motion.p
                         className="text-xs text-text-muted text-center pt-2"
-                        layout
                     >
                         +{upcomingGroups.length - 5} more days with tasks
                     </motion.p>

@@ -30,10 +30,19 @@ export function useStats(): StatsData {
         WHERE completed = 1 AND completed_at IS NOT NULL
         GROUP BY day
         ORDER BY day DESC
-    `);
+    `, [], {
+        // Stats are aggregate data — no need for real-time reactivity
+        throttleMs: 2000,
+    });
 
     // 2. Fetch Completion Rates (Aggregates)
-    const now = useMemo(() => new Date(), []);
+    // Stable reference: floor to start of current minute to prevent unnecessary recomputation
+    const now = useMemo(() => {
+        const d = new Date();
+        d.setSeconds(0, 0);
+        return d;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [Math.floor(Date.now() / 60000)]);
     const weekAgo = subDays(now, 7).getTime();
     const monthAgo = subDays(now, 30).getTime();
 
@@ -44,7 +53,10 @@ export function useStats(): StatsData {
             SUM(CASE WHEN due_date >= ? THEN 1 ELSE 0 END) as monthlyTotal,
             SUM(CASE WHEN due_date >= ? AND completed = 1 THEN 1 ELSE 0 END) as monthlyDone
         FROM tasks`,
-        [weekAgo, weekAgo, monthAgo, monthAgo]
+        [weekAgo, weekAgo, monthAgo, monthAgo],
+        {
+            throttleMs: 2000,
+        }
     );
 
     const rates = useMemo(() => {

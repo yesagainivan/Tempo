@@ -30,6 +30,10 @@ export function useTasksForDate(date: Date): Task[] {
 export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
     const { tasksMap } = useTaskData();
 
+    // Use stable string keys for memoization — Date objects create new references on every render
+    const startKey = format(startDate, 'yyyy-MM-dd');
+    const endKey = format(endDate, 'yyyy-MM-dd');
+
     // Efficiently gather tasks from the map for the range
     const tasks = useMemo(() => {
         const result: Task[] = [];
@@ -45,7 +49,8 @@ export function useTasksInRange(startDate: Date, endDate: Date): Task[] {
             current.setDate(current.getDate() + 1);
         }
         return result;
-    }, [startDate, endDate, tasksMap]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [startKey, endKey, tasksMap]);
 
     return tasks;
 }

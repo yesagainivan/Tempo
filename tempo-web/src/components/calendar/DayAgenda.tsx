@@ -85,9 +85,7 @@ export const DayAgenda = memo(function DayAgenda({
                         : 'bg-bg-secondary/50'
                     }
         `}
-                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                key={date.toISOString()}
             >
                 {/* Today's special gradient border */}
                 {today && (

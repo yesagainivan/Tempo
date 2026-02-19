@@ -19,12 +19,21 @@ export function TaskProvider({ children, viewWindow }: TaskProviderProps) {
     // Fetch existing tasks in range
     const { data: rangeRows, isLoading: isLoadingTasks } = useQuery(
         `SELECT * FROM tasks WHERE due_date_local >= ? AND due_date_local <= ?`,
-        [startStr, endStr]
+        [startStr, endStr],
+        {
+            // Coalesce rapid table-change notifications (e.g., toggling checkboxes)
+            throttleMs: 200,
+        }
     );
 
     // Fetch All Recurrence Templates (they are usually few)
     const { data: templateRows, isLoading: isLoadingTemplates } = useQuery(
-        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`
+        `SELECT * FROM tasks WHERE recurrence IS NOT NULL`,
+        [],
+        {
+            // Templates rarely change — throttle more aggressively
+            throttleMs: 500,
+        }
     );
 
     // 2. Process Data & Generate Instances (Memoized)

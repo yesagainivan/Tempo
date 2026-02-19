@@ -65,17 +65,15 @@ export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) 
                         className="space-y-2 mb-4"
                         initial={false}
                     >
-                        <AnimatePresence mode="popLayout" initial={false}>
+                        <AnimatePresence initial={false}>
                             {pendingTasks.slice(0, 5).map((task) => (
                                 <motion.div
                                     key={task.id}
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 10, transition: { duration: 0.2 } }}
-                                    layout
                                     transition={{
                                         duration: 0.2,
-                                        layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
                                     }}
                                 >
                                     <TaskItem task={task} />
@@ -85,7 +83,6 @@ export const TodayTile = memo(function TodayTile({ onViewDay }: TodayTileProps) 
                         {pendingTasks.length > 5 && (
                             <motion.p
                                 className="text-sm text-text-muted text-center pt-2"
-                                layout
                             >
                                 +{pendingTasks.length - 5} more tasks
                             </motion.p>
