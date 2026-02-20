@@ -57,7 +57,7 @@ export const Home = memo(function Home({ currentMonth, onMonthChange, onSelectDa
                         className="lg:col-span-8"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 }}
+                        transition={{ delay: 0.05 }}
                     >
                         <CalendarTile
                             currentMonth={currentMonth}
@@ -72,7 +72,7 @@ export const Home = memo(function Home({ currentMonth, onMonthChange, onSelectDa
                         className="lg:col-span-4"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.15 }}
+                        transition={{ delay: 0.05 }}
                     >
                         <StatsTile onClick={() => setIsStatsOpen(true)} />
                     </motion.div>
@@ -84,7 +84,7 @@ export const Home = memo(function Home({ currentMonth, onMonthChange, onSelectDa
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
+                        transition={{ delay: 0.1 }}
                     >
                         <TodayTile onViewDay={handleViewToday} />
                     </motion.div>
@@ -92,18 +92,20 @@ export const Home = memo(function Home({ currentMonth, onMonthChange, onSelectDa
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.25 }}
+                        transition={{ delay: 0.1 }}
                     >
                         <UpcomingTile onSelectDate={handleSelectDate} />
                     </motion.div>
                 </div>
 
             </div>
-            {/* Stats Modal */}
-            <StatsModal
-                isOpen={isStatsOpen}
-                onClose={() => setIsStatsOpen(false)}
-            />
+            {/* Stats Modal — only mount when open */}
+            {isStatsOpen && (
+                <StatsModal
+                    isOpen={isStatsOpen}
+                    onClose={() => setIsStatsOpen(false)}
+                />
+            )}
         </motion.div>
     );
 });

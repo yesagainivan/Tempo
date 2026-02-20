@@ -6,7 +6,7 @@ import { startOfMonth, endOfMonth, addMonths, subMonths, isSameMonth } from 'dat
 import { CommandBar } from './components/command-bar';
 import { Header } from './components/layout/Header';
 import { SettingsModal } from './components/settings/SettingsModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { Task } from './lib/db';
 import { PowerSyncContext } from '@powersync/react';
 import { db, setupPowerSync, connector } from './lib/db/powersync';
@@ -189,41 +189,44 @@ function App() {
             openSettings={() => setIsSettingsOpen(true)}
           />
 
-          {/* Main Content Area */}
+          {/* Main Content Area — Tab Pattern: both views stay mounted */}
           <main className="pt-20 px-4 sm:px-6 pb-8">
-            <AnimatePresence mode="wait">
-              {viewMode === 'home' ? (
-                <motion.div
-                  key="home"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="pt-4"
-                >
-                  <Home
-                    currentMonth={currentMonth}
-                    onMonthChange={setCurrentMonth}
-                    onSelectDate={handleSelectDate}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="day"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="pt-4"
-                >
-                  <DayAgenda
-                    date={selectedDate}
-                    onDateChange={handleDateChange}
-                    onBackToCalendar={handleBackToHome}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Home Tab */}
+            <div
+              className="pt-4 transition-opacity duration-150"
+              style={{
+                opacity: viewMode === 'home' ? 1 : 0,
+                pointerEvents: viewMode === 'home' ? 'auto' : 'none',
+                position: viewMode === 'home' ? 'relative' : 'absolute',
+                // Keep off-screen tab in layout flow but visually hidden
+                ...(viewMode !== 'home' && { top: 0, left: 0, right: 0, visibility: 'hidden' as const }),
+              }}
+              aria-hidden={viewMode !== 'home'}
+            >
+              <Home
+                currentMonth={currentMonth}
+                onMonthChange={setCurrentMonth}
+                onSelectDate={handleSelectDate}
+              />
+            </div>
+
+            {/* Day Tab */}
+            <div
+              className="pt-4 transition-opacity duration-150"
+              style={{
+                opacity: viewMode === 'day' ? 1 : 0,
+                pointerEvents: viewMode === 'day' ? 'auto' : 'none',
+                position: viewMode === 'day' ? 'relative' : 'absolute',
+                ...(viewMode !== 'day' && { top: 0, left: 0, right: 0, visibility: 'hidden' as const }),
+              }}
+              aria-hidden={viewMode !== 'day'}
+            >
+              <DayAgenda
+                date={selectedDate}
+                onDateChange={handleDateChange}
+                onBackToCalendar={handleBackToHome}
+              />
+            </div>
           </main>
 
           {/* Command Bar */}
