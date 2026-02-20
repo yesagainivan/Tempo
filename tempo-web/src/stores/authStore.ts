@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/db/powersync';
-import type { Session, User } from '@supabase/supabase-js';
+import type { Session, User, Subscription } from '@supabase/supabase-js';
 
 interface AuthState {
     session: Session | null;
@@ -9,9 +9,13 @@ interface AuthState {
     initialized: boolean;
 
     initialize: () => Promise<void>;
+    cleanup: () => void;
     signInWithGithub: () => Promise<void>;
     signOut: () => Promise<void>;
 }
+
+// Module-level ref to track auth subscription for cleanup
+let authSubscription: Subscription | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     session: null,
@@ -31,14 +35,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             initialized: true
         });
 
-        // Listen for changes
-        supabase.auth.onAuthStateChange((_event, session) => {
+        // Listen for changes — store subscription for cleanup
+        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
             set({
                 session,
                 user: session?.user ?? null,
                 loading: false
             });
         });
+        authSubscription = data.subscription;
+    },
+
+    cleanup: () => {
+        authSubscription?.unsubscribe();
+        authSubscription = null;
     },
 
     signInWithGithub: async () => {

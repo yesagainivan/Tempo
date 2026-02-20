@@ -44,6 +44,10 @@ function App() {
     if (dbReady) {
       db.connect(connector);
     }
+    // Cleanup: disconnect sync stream on unmount to prevent orphaned connections
+    return () => {
+      db.disconnect();
+    };
   }, [dbReady]);
 
   // Navigation state

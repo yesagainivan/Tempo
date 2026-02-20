@@ -1,7 +1,8 @@
-import { PowerSyncDatabase } from '@powersync/web';
+import { PowerSyncDatabase, WASQLiteVFS, WASQLiteOpenFactory } from '@powersync/web';
 import { AppSchema } from './schema';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { AbstractPowerSyncDatabase, PowerSyncBackendConnector } from '@powersync/web';
+import type { Subscription } from '@supabase/supabase-js';
 
 // =================================================================
 // SUPABASE CLIENT
@@ -20,6 +21,7 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
     readonly client: SupabaseClient;
     private cachedToken: string | null = null;
     private cachedUserId: string | null = null;
+    private authSubscription: Subscription | null = null;
 
     constructor(client: SupabaseClient) {
         this.client = client;
@@ -31,10 +33,17 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
         });
 
         // Subscribe to auth state changes to keep cache updated
-        this.client.auth.onAuthStateChange((_event, session) => {
+        const { data } = this.client.auth.onAuthStateChange((_event, session) => {
             this.cachedToken = session?.access_token ?? null;
             this.cachedUserId = session?.user.id ?? null;
         });
+        this.authSubscription = data.subscription;
+    }
+
+    /** Unsubscribe from auth changes to prevent memory leaks */
+    dispose(): void {
+        this.authSubscription?.unsubscribe();
+        this.authSubscription = null;
     }
 
     async fetchCredentials() {
@@ -102,12 +111,12 @@ export const connector = new SupabaseConnector(supabase);
 
 export const db = new PowerSyncDatabase({
     schema: AppSchema,
-    database: {
+    database: new WASQLiteOpenFactory({
         dbFilename: 'tempo.db',
-    },
-    flags: {
-        useWebWorker: false, // Disabling worker to prevent Safari crashes
-    }
+        // OPFSCoopSyncVFS is recommended by PowerSync for Safari/iOS stability.
+        // The default IDBBatchAtomicVFS has known memory leak patterns in WebKit.
+        vfs: WASQLiteVFS.OPFSCoopSyncVFS,
+    }),
 });
 
 export const setupPowerSync = async () => {
