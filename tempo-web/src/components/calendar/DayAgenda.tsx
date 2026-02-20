@@ -1,8 +1,9 @@
 import { memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { format, isToday, addDays, subDays } from 'date-fns';
 import { useTasksForDate } from '../../hooks/useTasks';
 import { TaskItem, InlineTaskCreator } from '../tasks';
+import { AnimateHeight } from '../layout/AnimateHeight';
 
 // =================================================================
 // DAY AGENDA COMPONENT
@@ -148,23 +149,21 @@ export const DayAgenda = memo(function DayAgenda({
           `} />
 
                     {/* Tasks List */}
-                    <div className="space-y-2 mb-4">
-                        <AnimatePresence mode="wait">
-                            {tasks.map((task) => (
-                                <motion.div
-                                    key={task.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                                    transition={{
-                                        duration: 0.2
-                                    }}
-                                >
-                                    <TaskItem task={task} />
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
+                    <AnimateHeight className="mb-4" innerClassName="space-y-2">
+                        {tasks.map((task) => (
+                            <motion.div
+                                key={task.id}
+                                initial={{ opacity: 0, x: -20, height: 0 }}
+                                animate={{ opacity: 1, x: 0, height: 'auto' }}
+                                exit={{ opacity: 0, scale: 0.95, height: 0, transition: { duration: 0.2 } }}
+                                transition={{
+                                    duration: 0.2
+                                }}
+                            >
+                                <TaskItem task={task} />
+                            </motion.div>
+                        ))}
+                    </AnimateHeight>
 
                     {/* Empty State */}
                     {tasks.length === 0 && (
