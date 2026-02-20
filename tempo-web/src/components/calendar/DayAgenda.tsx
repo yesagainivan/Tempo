@@ -149,7 +149,7 @@ export const DayAgenda = memo(function DayAgenda({
 
                     {/* Tasks List */}
                     <div className="space-y-2 mb-4">
-                        <AnimatePresence>
+                        <AnimatePresence mode="wait">
                             {tasks.map((task) => (
                                 <motion.div
                                     key={task.id}
