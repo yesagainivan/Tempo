@@ -192,17 +192,7 @@ function App() {
           {/* Main Content Area — Tab Pattern: both views stay mounted */}
           <main className="pt-20 px-4 sm:px-6 pb-8">
             {/* Home Tab */}
-            <div
-              className="pt-4 transition-opacity duration-150"
-              style={{
-                opacity: viewMode === 'home' ? 1 : 0,
-                pointerEvents: viewMode === 'home' ? 'auto' : 'none',
-                position: viewMode === 'home' ? 'relative' : 'absolute',
-                // Keep off-screen tab in layout flow but visually hidden
-                ...(viewMode !== 'home' && { top: 0, left: 0, right: 0, visibility: 'hidden' as const }),
-              }}
-              aria-hidden={viewMode !== 'home'}
-            >
+            <div className="pt-4" hidden={viewMode !== 'home'}>
               <Home
                 currentMonth={currentMonth}
                 onMonthChange={setCurrentMonth}
@@ -211,16 +201,7 @@ function App() {
             </div>
 
             {/* Day Tab */}
-            <div
-              className="pt-4 transition-opacity duration-150"
-              style={{
-                opacity: viewMode === 'day' ? 1 : 0,
-                pointerEvents: viewMode === 'day' ? 'auto' : 'none',
-                position: viewMode === 'day' ? 'relative' : 'absolute',
-                ...(viewMode !== 'day' && { top: 0, left: 0, right: 0, visibility: 'hidden' as const }),
-              }}
-              aria-hidden={viewMode !== 'day'}
-            >
+            <div className="pt-4" hidden={viewMode !== 'day'}>
               <DayAgenda
                 date={selectedDate}
                 onDateChange={handleDateChange}
