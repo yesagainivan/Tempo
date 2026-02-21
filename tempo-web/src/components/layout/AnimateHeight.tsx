@@ -44,7 +44,7 @@ export function AnimateHeight({ children, className = '', innerClassName = '', t
         >
             {/* The invisible measuring container that scales naturally with content */}
             <div ref={containerRef} className={`pb-[1px] ${innerClassName}`}>
-                <AnimatePresence>
+                <AnimatePresence mode="wait">
                     {children}
                 </AnimatePresence>
             </div>
